@@ -25,6 +25,23 @@
   font-display: swap;
 }
 
+/* D2Coding — Korean coding font (bundled) */
+@font-face {
+  font-family: 'D2Coding';
+  src: url('./assets/fonts/D2Coding.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'D2Coding';
+  src: url('./assets/fonts/D2CodingBold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* Dark palette — terminal #24292E, chrome #1D2125 */
   --color-bg-canvas: #1d2125;
