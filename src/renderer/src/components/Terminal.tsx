@@ -25,7 +25,11 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
   const handleResize = useCallback(() => {
     if (fitAddonRef.current && xtermRef.current) {
       try {
+        // Preserve scroll position across fit()
+        const viewport = containerRef.current?.querySelector('.xterm-viewport') as HTMLElement | null
+        const scrollTop = viewport?.scrollTop ?? 0
         fitAddonRef.current.fit()
+        if (viewport) viewport.scrollTop = scrollTop
         if (sessionIdRef.current) {
           window.api.terminal.resize(
             sessionIdRef.current,
