@@ -110,8 +110,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       }
       if (data === '\x03' || data === '\x04') { inputBufferRef.current = ''; return }
       // Skip ANSI escape sequences (arrow keys, focus events, etc.)
-      // ESC may arrive in a separate onData call from its continuation ([A, [O, [I, etc.)
-      if (data.includes('\x1b')) { escapeRef.current = true; return }
+      // ESC may arrive alone (split) or as complete sequence (\x1b[A)
+      // Only flag next-chunk skip when ESC arrives alone
+      if (data.includes('\x1b')) { escapeRef.current = data === '\x1b'; return }
       if (escapeRef.current) {
         escapeRef.current = false
         return
