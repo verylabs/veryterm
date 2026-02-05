@@ -40,8 +40,8 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
           actions.onToggleSidebar()
           break
 
-        // Cmd+K: Focus prompt search
-        case 'k':
+        // Cmd+F: Focus prompt search
+        case 'f':
           e.preventDefault()
           actions.onFocusSearch()
           break

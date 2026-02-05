@@ -13,7 +13,11 @@ interface ProjectViewProps {
 
 export default function ProjectView({ project, active }: ProjectViewProps) {
   const { addPrompt } = usePromptStore()
-  const { panelSizes, setPanelSizes, focusedPanel, setFocusedPanel, setServerRunning } = useUIStore()
+  const {
+    panelSizes, setPanelSizes,
+    focusedPanel, setFocusedPanel, setServerRunning,
+    layoutMode, splitRatio, setSplitRatio, secondarySplit, setSecondarySplit
+  } = useUIStore()
   const serverRunning = useUIStore((s) => s.serverRunning[project.id])
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -83,6 +87,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     [mainSessionId]
   )
 
+  // Rows layout resize handlers (existing)
   const handleResize1 = useCallback(
     (delta: number) => {
       if (!containerRef.current) return
@@ -109,60 +114,143 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     [panelSizes, setPanelSizes]
   )
 
-  const panelHeaderClass = 'px-3 py-1.5 text-[11px] font-medium text-fg-subtle uppercase tracking-wider border-b border-border-muted bg-bg-canvas shrink-0 flex items-center justify-between'
+  // Right-split: horizontal resize (left/right split)
+  const handleRightSplitPrimary = useCallback(
+    (delta: number) => {
+      if (!containerRef.current) return
+      const pctDelta = (delta / containerRef.current.clientWidth) * 100
+      setSplitRatio(splitRatio + pctDelta)
+    },
+    [splitRatio, setSplitRatio]
+  )
+
+  // Right-split: vertical resize (right top/bottom split)
+  const handleRightSplitSecondary = useCallback(
+    (delta: number) => {
+      if (!containerRef.current) return
+      const pctDelta = (delta / containerRef.current.clientHeight) * 100
+      setSecondarySplit(secondarySplit + pctDelta)
+    },
+    [secondarySplit, setSecondarySplit]
+  )
+
+  // Bottom-split: vertical resize (top/bottom split)
+  const handleBottomSplitPrimary = useCallback(
+    (delta: number) => {
+      if (!containerRef.current) return
+      const pctDelta = (delta / containerRef.current.clientHeight) * 100
+      setSplitRatio(splitRatio + pctDelta)
+    },
+    [splitRatio, setSplitRatio]
+  )
+
+  // Bottom-split: horizontal resize (bottom left/right split)
+  const handleBottomSplitSecondary = useCallback(
+    (delta: number) => {
+      if (!containerRef.current) return
+      const pctDelta = (delta / containerRef.current.clientWidth) * 100
+      setSecondarySplit(secondarySplit + pctDelta)
+    },
+    [secondarySplit, setSecondarySplit]
+  )
+
+  const panelHeaderStyle = { height: 32, minHeight: 32, maxHeight: 32 } as const
+  const panelHeaderClass = 'px-3 text-xs leading-none font-medium text-fg-subtle uppercase tracking-wider border-b border-border-muted bg-bg-default flex items-center justify-between'
   const focusRing = 'ring-1 ring-inset ring-accent-fg/25'
+
+  // Panel render helpers
+  const renderCLI = (style?: React.CSSProperties) => (
+    <div
+      className={`min-h-0 flex flex-col ${focusedPanel === 'main' ? focusRing : ''}`}
+      style={style}
+      onClick={() => setFocusedPanel('main')}
+    >
+      <div className={panelHeaderClass} style={panelHeaderStyle}>
+        <span>Claude CLI</span>
+      </div>
+      <div className="flex-1 min-h-0">
+        <Terminal sessionId={mainSessionId} onInput={handleMainInput} />
+      </div>
+    </div>
+  )
+
+  const renderServer = (style?: React.CSSProperties) => (
+    <div
+      className={`min-h-0 flex flex-col ${focusedPanel === 'server' ? focusRing : ''}`}
+      style={style}
+      onClick={() => setFocusedPanel('server')}
+    >
+      <div className={panelHeaderClass} style={panelHeaderStyle}>
+        <div className="flex items-center gap-2">
+          <span>Server</span>
+          {serverRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
+        </div>
+        {project.serverCommand && (
+          <span className="text-fg-subtle font-mono normal-case">{project.serverCommand}</span>
+        )}
+      </div>
+      <div className="flex-1 min-h-0">
+        <Terminal sessionId={serverSessionId} onInput={handleServerInput} />
+      </div>
+    </div>
+  )
+
+  const renderPrompts = (style?: React.CSSProperties) => (
+    <div
+      className={`min-h-0 ${focusedPanel === 'prompts' ? focusRing : ''}`}
+      style={style}
+      onClick={() => setFocusedPanel('prompts')}
+    >
+      <PromptPanel projectId={project.id} onSelectPrompt={handleSelectPrompt} />
+    </div>
+  )
+
+  const renderRows = () => (
+    <>
+      {renderCLI({ height: `${panelSizes[0]}%` })}
+      <ResizeHandle onResize={handleResize1} />
+      {renderServer({ height: `${panelSizes[1]}%` })}
+      <ResizeHandle onResize={handleResize2} />
+      {renderPrompts({ height: `${panelSizes[2]}%` })}
+    </>
+  )
+
+  const renderRightSplit = () => (
+    <div className="flex-1 flex flex-row min-h-0">
+      {/* Left: CLI */}
+      {renderCLI({ width: `${splitRatio}%` })}
+      <ResizeHandle direction="horizontal" onResize={handleRightSplitPrimary} />
+      {/* Right: Server (top) + Prompts (bottom) */}
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
+        {renderServer({ height: `${secondarySplit}%` })}
+        <ResizeHandle onResize={handleRightSplitSecondary} />
+        {renderPrompts({ flex: 1 })}
+      </div>
+    </div>
+  )
+
+  const renderBottomSplit = () => (
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Top: CLI */}
+      {renderCLI({ height: `${splitRatio}%` })}
+      <ResizeHandle onResize={handleBottomSplitPrimary} />
+      {/* Bottom: Server (left) + Prompts (right) */}
+      <div className="flex-1 flex flex-row min-h-0 min-w-0">
+        {renderServer({ width: `${secondarySplit}%` })}
+        <ResizeHandle direction="horizontal" onResize={handleBottomSplitSecondary} />
+        {renderPrompts({ flex: 1 })}
+      </div>
+    </div>
+  )
 
   return (
     <div
       ref={containerRef}
       className={`flex-1 flex flex-col min-h-0 ${active ? '' : 'hidden'}`}
     >
-      {/* Main terminal */}
-      <div
-        className={`min-h-0 flex flex-col ${focusedPanel === 'main' ? focusRing : ''}`}
-        style={{ height: `${panelSizes[0]}%` }}
-        onClick={() => setFocusedPanel('main')}
-      >
-        <div className={panelHeaderClass}>
-          <span>Claude CLI</span>
-        </div>
-        <div className="flex-1 min-h-0">
-          <Terminal sessionId={mainSessionId} onInput={handleMainInput} />
-        </div>
-      </div>
-
-      <ResizeHandle onResize={handleResize1} />
-
-      {/* Server terminal */}
-      <div
-        className={`min-h-0 flex flex-col ${focusedPanel === 'server' ? focusRing : ''}`}
-        style={{ height: `${panelSizes[1]}%` }}
-        onClick={() => setFocusedPanel('server')}
-      >
-        <div className={panelHeaderClass}>
-          <div className="flex items-center gap-2">
-            <span>Server</span>
-            {serverRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
-          </div>
-          {project.serverCommand && (
-            <span className="text-fg-subtle font-mono normal-case">{project.serverCommand}</span>
-          )}
-        </div>
-        <div className="flex-1 min-h-0">
-          <Terminal sessionId={serverSessionId} onInput={handleServerInput} />
-        </div>
-      </div>
-
-      <ResizeHandle onResize={handleResize2} />
-
-      {/* Prompt history */}
-      <div
-        className={`min-h-0 ${focusedPanel === 'prompts' ? focusRing : ''}`}
-        style={{ height: `${panelSizes[2]}%` }}
-        onClick={() => setFocusedPanel('prompts')}
-      >
-        <PromptPanel projectId={project.id} onSelectPrompt={handleSelectPrompt} />
-      </div>
+      {layoutMode === 'rows' && renderRows()}
+      {layoutMode === 'right-split' && renderRightSplit()}
+      {layoutMode === 'bottom-split' && renderBottomSplit()}
     </div>
   )
 }

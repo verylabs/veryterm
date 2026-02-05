@@ -70,8 +70,8 @@ export default function Sidebar() {
   // Collapsed sidebar
   if (sidebarCollapsed) {
     return (
-      <div className="w-[48px] h-full bg-bg-default border-r border-border-default flex flex-col items-center">
-        <div className="h-10 flex items-center justify-center shrink-0 border-b border-border-muted w-full">
+      <div className="w-[48px] h-full bg-bg-default border-r border-border-muted flex flex-col items-center">
+        <div className="h-8 flex items-center justify-center shrink-0 border-b border-border-muted w-full">
           <button
             onClick={toggleSidebar}
             className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-bg-subtle text-fg-subtle hover:text-fg-muted transition-colors text-xs"
@@ -107,7 +107,7 @@ export default function Sidebar() {
     <>
       <div
         ref={sidebarRef}
-        className={`w-[250px] h-full bg-bg-default border-r border-border-default flex flex-col transition-colors ${
+        className={`w-[250px] h-full bg-bg-default border-r border-border-muted flex flex-col transition-colors ${
           dragOver ? 'bg-bg-subtle border-accent-fg/40' : ''
         }`}
         onDragOver={handleDragOver}
@@ -115,9 +115,9 @@ export default function Sidebar() {
         onDrop={handleDrop}
       >
         {/* Header */}
-        <div className="h-10 flex items-center justify-between px-3 border-b border-border-muted shrink-0">
+        <div className="h-8 flex items-center justify-between px-3 border-b border-border-muted shrink-0">
           <div className="flex items-center gap-1">
-            <span className="text-[12px] font-semibold text-fg-muted">Projects</span>
+            <span className="text-[12px] font-semibold text-fg-default">Projects</span>
             <button
               onClick={handleAddProject}
               className="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-subtle text-fg-subtle hover:text-fg-default transition-colors text-sm"
@@ -156,7 +156,7 @@ export default function Sidebar() {
               className={`group flex items-center gap-2.5 px-3 py-2 mx-1 rounded-md cursor-pointer transition-colors ${
                 activeProjectId === project.id
                   ? 'bg-bg-subtle text-fg-default'
-                  : 'text-fg-muted hover:bg-bg-subtle/60 hover:text-fg-default'
+                  : 'text-fg-default hover:bg-bg-subtle/60 hover:text-fg-default'
               }`}
             >
               <div
@@ -198,13 +198,10 @@ export default function Sidebar() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border-muted px-3 py-2">
-          <div className="flex items-center justify-between text-[11px] text-fg-subtle">
+        <div className="h-8 border-t border-border-muted px-3 flex items-center shrink-0">
+          <div className="flex items-center justify-between w-full text-xs text-fg-muted">
             <span>{projects.length} projects</span>
-            <div className="flex gap-2 font-mono">
-              <span>⌘B</span>
-              <span>⌘K</span>
-            </div>
+            <span className="font-mono">⌘B</span>
           </div>
         </div>
       </div>

@@ -68,10 +68,10 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
   return (
     <div className="h-full flex flex-col bg-bg-inset">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-muted bg-bg-canvas shrink-0">
-        <span className="text-[11px] font-medium text-fg-default uppercase tracking-wider">Prompts</span>
-        <kbd className="text-[10px] px-1 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-subtle font-mono">⌘K</kbd>
+      <div className="flex items-center gap-2 px-3 leading-none border-b border-border-muted bg-bg-default" style={{ height: 32, minHeight: 32, maxHeight: 32 }}>
+        <span className="text-xs font-medium text-fg-default uppercase tracking-wider">Prompts</span>
         <div className="flex-1" />
+        <kbd className="text-[10px] px-1 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-subtle font-mono">⌘F</kbd>
         <input
           ref={searchRef}
           type="text"

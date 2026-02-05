@@ -44,24 +44,16 @@ export default function ResizeHandle({ onResize, direction = 'vertical' }: Resiz
       onMouseDown={handleMouseDown}
       className={`group relative shrink-0 ${
         direction === 'vertical'
-          ? 'h-1.5 cursor-row-resize'
-          : 'w-1.5 cursor-col-resize'
+          ? 'h-px bg-border-muted cursor-row-resize'
+          : 'w-px bg-border-muted cursor-col-resize'
       }`}
     >
-      {/* Visual indicator */}
-      <div
-        className={`absolute bg-border-default opacity-0 group-hover:opacity-100 transition-opacity rounded-full ${
-          direction === 'vertical'
-            ? 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-0.5'
-            : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-0.5'
-        }`}
-      />
       {/* Larger hit area */}
       <div
-        className={`absolute ${
+        className={`absolute z-10 ${
           direction === 'vertical'
-            ? 'inset-x-0 -top-1 -bottom-1'
-            : 'inset-y-0 -left-1 -right-1'
+            ? 'inset-x-0 -top-1.5 -bottom-1.5'
+            : 'inset-y-0 -left-1.5 -right-1.5'
         }`}
       />
     </div>

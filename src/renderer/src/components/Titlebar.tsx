@@ -1,24 +1,63 @@
 import { useProjectStore } from '../stores/projectStore'
-import { useUIStore } from '../stores/uiStore'
+import { useUIStore, type LayoutMode } from '../stores/uiStore'
+
+function LayoutIcon({ mode, active }: { mode: LayoutMode; active: boolean }) {
+  const color = active ? 'text-accent-fg' : 'text-fg-subtle'
+
+  if (mode === 'rows') {
+    // Three horizontal rows
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className={color}>
+        <rect x="1" y="1" width="12" height="3" rx="0.5" fill="currentColor" />
+        <rect x="1" y="5.5" width="12" height="3" rx="0.5" fill="currentColor" />
+        <rect x="1" y="10" width="12" height="3" rx="0.5" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  if (mode === 'right-split') {
+    // Left panel | Right top + Right bottom (ㅏ shape)
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className={color}>
+        <rect x="1" y="1" width="5.5" height="12" rx="0.5" fill="currentColor" />
+        <rect x="7.5" y="1" width="5.5" height="5.5" rx="0.5" fill="currentColor" />
+        <rect x="7.5" y="7.5" width="5.5" height="5.5" rx="0.5" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  // bottom-split: Top panel / Bottom left + Bottom right (ㅜ shape)
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" className={color}>
+      <rect x="1" y="1" width="12" height="5.5" rx="0.5" fill="currentColor" />
+      <rect x="1" y="7.5" width="5.5" height="5.5" rx="0.5" fill="currentColor" />
+      <rect x="7.5" y="7.5" width="5.5" height="5.5" rx="0.5" fill="currentColor" />
+    </svg>
+  )
+}
 
 export default function Titlebar() {
   const { projects, activeProjectId } = useProjectStore()
   const serverRunning = useUIStore((s) => activeProjectId ? s.serverRunning[activeProjectId] : false)
+  const layoutMode = useUIStore((s) => s.layoutMode)
+  const setLayoutMode = useUIStore((s) => s.setLayoutMode)
   const activeProject = projects.find((p) => p.id === activeProjectId)
 
+  const layouts: LayoutMode[] = ['rows', 'right-split', 'bottom-split']
+
   return (
-    <div className="titlebar-drag h-[38px] bg-bg-default border-b border-border-default flex items-center shrink-0">
+    <div className="titlebar-drag h-[38px] bg-bg-inset border-b border-border-default flex items-center shrink-0">
       {/* macOS 트래픽 라이트 공간 */}
       <div className="w-[78px] shrink-0" />
 
       {/* 프로젝트 이름 */}
-      <span className="titlebar-no-drag text-[13px] font-semibold text-fg-default">
+      <span className="titlebar-no-drag text-[13px] font-semibold text-fg-muted">
         {activeProject?.name || 'No Project'}
       </span>
 
       {/* 프로젝트 타입 */}
       {activeProject?.projectType && (
-        <span className="titlebar-no-drag text-[11px] text-fg-subtle ml-3 px-1.5 py-0.5 rounded bg-bg-subtle">
+        <span className="titlebar-no-drag text-[11px] text-fg-muted ml-3 px-1.5 py-0.5 rounded bg-bg-subtle">
           {activeProject.projectType}
         </span>
       )}
@@ -33,9 +72,23 @@ export default function Titlebar() {
 
       <div className="flex-1" />
 
+      {/* 레이아웃 전환 버튼 */}
+      <div className="titlebar-no-drag flex items-center gap-1 mr-3">
+        {layouts.map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setLayoutMode(mode)}
+            className="p-1 rounded hover:bg-bg-subtle transition-colors"
+            title={mode}
+          >
+            <LayoutIcon mode={mode} active={layoutMode === mode} />
+          </button>
+        ))}
+      </div>
+
       {/* 경로 */}
       {activeProject && (
-        <span className="titlebar-no-drag text-[11px] text-fg-subtle truncate max-w-[400px] mr-4">
+        <span className="titlebar-no-drag text-[11px] text-fg-muted truncate max-w-[400px] mr-4">
           {activeProject.path}
         </span>
       )}
