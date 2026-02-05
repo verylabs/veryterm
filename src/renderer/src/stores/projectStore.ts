@@ -20,6 +20,7 @@ interface ProjectState {
   renameCategory: (id: string, name: string) => void
   toggleCategoryCollapse: (id: string) => void
   moveProjectToCategory: (projectId: string, categoryId: string | null) => void
+  reorderProject: (projectId: string, targetProjectId: string, position: 'before' | 'after') => void
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
@@ -167,6 +168,28 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         p.id === projectId ? { ...p, category: categoryId || undefined } : p
       )
     }))
+    get().saveProjects()
+  },
+
+  reorderProject: (projectId: string, targetProjectId: string, position: 'before' | 'after') => {
+    if (projectId === targetProjectId) return
+    set((state) => {
+      const projects = [...state.projects]
+      const fromIdx = projects.findIndex((p) => p.id === projectId)
+      if (fromIdx === -1) return state
+
+      const [project] = projects.splice(fromIdx, 1)
+      const target = projects.find((p) => p.id === targetProjectId)
+      if (!target) return { projects: [project, ...projects] }
+
+      // Match target's category
+      project.category = target.category
+
+      let toIdx = projects.findIndex((p) => p.id === targetProjectId)
+      if (position === 'after') toIdx++
+      projects.splice(toIdx, 0, project)
+      return { projects }
+    })
     get().saveProjects()
   }
 }))

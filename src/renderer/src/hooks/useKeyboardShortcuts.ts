@@ -12,9 +12,16 @@ interface ShortcutActions {
 const PANEL_MAP = ['main', 'server', 'prompts'] as const
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
-  const { projects, setActiveProject } = useProjectStore()
+  const { projects, categories, setActiveProject } = useProjectStore()
 
   useEffect(() => {
+    // Build visual order: uncategorized first, then each category's projects
+    const uncategorized = projects.filter((p) => !p.category)
+    const categorized = categories.flatMap((cat) =>
+      projects.filter((p) => p.category === cat.id)
+    )
+    const visualOrder = [...uncategorized, ...categorized]
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Option+1/2/3: Switch panel
       if (e.altKey && !e.metaKey && !e.ctrlKey) {
@@ -29,12 +36,12 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
       const isMeta = e.metaKey || e.ctrlKey
       if (!isMeta) return
 
-      // Cmd+1~9: Switch project by index
+      // Cmd+1~9: Switch project by visual order
       if (e.key >= '1' && e.key <= '9') {
         const index = parseInt(e.key) - 1
-        if (index < projects.length) {
+        if (index < visualOrder.length) {
           e.preventDefault()
-          setActiveProject(projects[index].id)
+          setActiveProject(visualOrder[index].id)
         }
         return
       }
@@ -68,5 +75,5 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [projects, setActiveProject, actions])
+  }, [projects, categories, setActiveProject, actions])
 }

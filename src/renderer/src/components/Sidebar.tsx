@@ -11,13 +11,14 @@ export default function Sidebar() {
     projects, categories, activeProjectId,
     setActiveProject, addProject, removeProject,
     addCategory, removeCategory, renameCategory,
-    toggleCategoryCollapse, moveProjectToCategory
+    toggleCategoryCollapse, moveProjectToCategory, reorderProject
   } = useProjectStore()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
 
   const [settingsProject, setSettingsProject] = useState<Project | null>(null)
   const [folderDragOver, setFolderDragOver] = useState(false)
   const [dropTargetId, setDropTargetId] = useState<string | null | undefined>(undefined)
+  const [dropIndicator, setDropIndicator] = useState<{ projectId: string; position: 'before' | 'after' } | null>(null)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [showNewCategory, setShowNewCategory] = useState(false)
@@ -77,10 +78,43 @@ export default function Sidebar() {
     [addProject]
   )
 
-  // Project drag-drop (categorize)
+  // Project drag-drop (categorize + reorder)
   const handleProjectDragStart = (e: React.DragEvent, projectId: string) => {
     e.dataTransfer.setData(DRAG_TYPE_PROJECT, projectId)
     e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleProjectDragOver = (e: React.DragEvent, targetProjectId: string) => {
+    if (!e.dataTransfer.types.includes(DRAG_TYPE_PROJECT)) return
+    e.preventDefault()
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    const midY = rect.top + rect.height / 2
+    const position = e.clientY < midY ? 'before' : 'after'
+    setDropIndicator({ projectId: targetProjectId, position })
+    setDropTargetId(undefined)
+  }
+
+  const handleProjectDragLeave = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(DRAG_TYPE_PROJECT)) return
+    e.preventDefault()
+    e.stopPropagation()
+    setDropIndicator(null)
+  }
+
+  const handleProjectDrop = (e: React.DragEvent, targetProjectId: string) => {
+    if (!e.dataTransfer.types.includes(DRAG_TYPE_PROJECT)) return
+    e.preventDefault()
+    e.stopPropagation()
+    const projectId = e.dataTransfer.getData(DRAG_TYPE_PROJECT)
+    if (projectId && projectId !== targetProjectId) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      const midY = rect.top + rect.height / 2
+      const position = e.clientY < midY ? 'before' : 'after'
+      reorderProject(projectId, targetProjectId, position)
+    }
+    setDropIndicator(null)
+    setDropTargetId(undefined)
   }
 
   const handleCategoryDragOver = (e: React.DragEvent, targetId: string | null) => {
@@ -106,6 +140,7 @@ export default function Sidebar() {
       moveProjectToCategory(projectId, categoryId)
     }
     setDropTargetId(undefined)
+    setDropIndicator(null)
   }
 
   // Category rename
@@ -157,6 +192,15 @@ export default function Sidebar() {
   const renderProject = (project: Project, idx: number) => (
     <div
       key={project.id}
+      className="relative"
+      onDragOver={(e) => handleProjectDragOver(e, project.id)}
+      onDragLeave={handleProjectDragLeave}
+      onDrop={(e) => handleProjectDrop(e, project.id)}
+    >
+      {dropIndicator?.projectId === project.id && dropIndicator.position === 'before' && (
+        <div className="absolute top-0 left-2 right-2 h-[2px] bg-accent-fg rounded-full z-10" />
+      )}
+    <div
       draggable
       onDragStart={(e) => handleProjectDragStart(e, project.id)}
       onClick={() => setActiveProject(project.id)}
@@ -188,18 +232,22 @@ export default function Sidebar() {
       </div>
       <div className="flex items-center shrink-0">
         {idx < 9 && (
-          <span className="text-[13px] text-fg-subtle font-mono">
-            ⌘{idx + 1}
+          <span className="flex items-center text-fg-subtle font-mono">
+            <span className="text-[16px] leading-none">⌘</span><span className="text-[12px] leading-none">{idx + 1}</span>
           </span>
         )}
         <button
           onClick={(e) => handleSettings(e, project)}
-          className="w-8 h-8 flex items-center justify-center rounded-md text-fg-subtle hover:text-fg-default hover:bg-bg-subtle/80 text-[20px] transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-md text-fg-subtle hover:text-fg-default hover:bg-bg-subtle/80 text-[16px] leading-none -translate-y-[1px] transition-colors"
           title="Settings"
         >
           ⚙
         </button>
       </div>
+    </div>
+      {dropIndicator?.projectId === project.id && dropIndicator.position === 'after' && (
+        <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-accent-fg rounded-full z-10" />
+      )}
     </div>
   )
 
@@ -362,11 +410,9 @@ export default function Sidebar() {
                         startRenaming(cat)
                       }}
                     >
-                      {cat.name}
+                      {cat.name}<span className="text-[10px] text-fg-subtle font-normal ml-1">({catProjects.length})</span>
                     </span>
                   )}
-
-                  <span className="text-[10px] text-fg-subtle tabular-nums">{catProjects.length}</span>
 
                   <button
                     onClick={(e) => handleRemoveCategory(e, cat.id)}
