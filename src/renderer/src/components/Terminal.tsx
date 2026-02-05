@@ -127,6 +127,8 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
   }, [sessionId, handleResize])
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-bg-inset" />
+    <div className="w-full h-full bg-bg-inset p-2 pr-1">
+      <div ref={containerRef} className="w-full h-full" />
+    </div>
   )
 }

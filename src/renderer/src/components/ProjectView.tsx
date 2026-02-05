@@ -92,26 +92,26 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     (delta: number) => {
       if (!containerRef.current) return
       const pctDelta = (delta / containerRef.current.clientHeight) * 100
-      const [a, b, c] = panelSizes
+      const [a, b, c] = useUIStore.getState().panelSizes
       const newA = Math.max(15, Math.min(70, a + pctDelta))
       const newB = Math.max(10, b - pctDelta)
       if (newB < 10) return
       setPanelSizes([newA, newB, c])
     },
-    [panelSizes, setPanelSizes]
+    [setPanelSizes]
   )
 
   const handleResize2 = useCallback(
     (delta: number) => {
       if (!containerRef.current) return
       const pctDelta = (delta / containerRef.current.clientHeight) * 100
-      const [a, b, c] = panelSizes
+      const [a, b, c] = useUIStore.getState().panelSizes
       const newB = Math.max(10, Math.min(60, b + pctDelta))
       const newC = Math.max(10, c - pctDelta)
       if (newC < 10) return
       setPanelSizes([a, newB, newC])
     },
-    [panelSizes, setPanelSizes]
+    [setPanelSizes]
   )
 
   // Right-split: horizontal resize (left/right split)
@@ -119,9 +119,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     (delta: number) => {
       if (!containerRef.current) return
       const pctDelta = (delta / containerRef.current.clientWidth) * 100
-      setSplitRatio(splitRatio + pctDelta)
+      setSplitRatio(useUIStore.getState().splitRatio + pctDelta)
     },
-    [splitRatio, setSplitRatio]
+    [setSplitRatio]
   )
 
   // Right-split: vertical resize (right top/bottom split)
@@ -129,9 +129,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     (delta: number) => {
       if (!containerRef.current) return
       const pctDelta = (delta / containerRef.current.clientHeight) * 100
-      setSecondarySplit(secondarySplit + pctDelta)
+      setSecondarySplit(useUIStore.getState().secondarySplit + pctDelta)
     },
-    [secondarySplit, setSecondarySplit]
+    [setSecondarySplit]
   )
 
   // Bottom-split: vertical resize (top/bottom split)
@@ -139,9 +139,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     (delta: number) => {
       if (!containerRef.current) return
       const pctDelta = (delta / containerRef.current.clientHeight) * 100
-      setSplitRatio(splitRatio + pctDelta)
+      setSplitRatio(useUIStore.getState().splitRatio + pctDelta)
     },
-    [splitRatio, setSplitRatio]
+    [setSplitRatio]
   )
 
   // Bottom-split: horizontal resize (bottom left/right split)
@@ -149,9 +149,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     (delta: number) => {
       if (!containerRef.current) return
       const pctDelta = (delta / containerRef.current.clientWidth) * 100
-      setSecondarySplit(secondarySplit + pctDelta)
+      setSecondarySplit(useUIStore.getState().secondarySplit + pctDelta)
     },
-    [secondarySplit, setSecondarySplit]
+    [setSecondarySplit]
   )
 
   const panelHeaderStyle = { height: 32, minHeight: 32, maxHeight: 32 } as const

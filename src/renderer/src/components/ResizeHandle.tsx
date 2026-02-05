@@ -8,6 +8,8 @@ interface ResizeHandleProps {
 export default function ResizeHandle({ onResize, direction = 'vertical' }: ResizeHandleProps) {
   const startPosRef = useRef(0)
   const isDraggingRef = useRef(false)
+  const onResizeRef = useRef(onResize)
+  onResizeRef.current = onResize
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -20,7 +22,7 @@ export default function ResizeHandle({ onResize, direction = 'vertical' }: Resiz
         const currentPos = direction === 'vertical' ? e.clientY : e.clientX
         const delta = currentPos - startPosRef.current
         startPosRef.current = currentPos
-        onResize(delta)
+        onResizeRef.current(delta)
       }
 
       const handleMouseUp = () => {
@@ -36,7 +38,7 @@ export default function ResizeHandle({ onResize, direction = 'vertical' }: Resiz
       document.body.style.cursor = direction === 'vertical' ? 'row-resize' : 'col-resize'
       document.body.style.userSelect = 'none'
     },
-    [onResize, direction]
+    [direction]
   )
 
   return (
@@ -44,9 +46,9 @@ export default function ResizeHandle({ onResize, direction = 'vertical' }: Resiz
       onMouseDown={handleMouseDown}
       className={`group relative shrink-0 ${
         direction === 'vertical'
-          ? 'h-px bg-border-muted cursor-row-resize'
-          : 'w-px bg-border-muted cursor-col-resize'
-      }`}
+          ? 'h-px bg-border-muted cursor-row-resize hover:bg-blue-500'
+          : 'w-px bg-border-muted cursor-col-resize hover:bg-blue-500'
+      } transition-colors duration-150`}
     >
       {/* Larger hit area */}
       <div

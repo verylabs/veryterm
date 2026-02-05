@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { usePromptStore } from '../stores/promptStore'
 import { useUIStore } from '../stores/uiStore'
 
@@ -42,25 +42,40 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
     return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const handleCopy = useCallback((e: React.MouseEvent, id: string, text: string) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }, [])
+
   const PromptItem = ({ prompt }: { prompt: typeof projectPrompts[0] }) => (
-    <div
-      className="group flex items-start gap-2 px-3 py-2 hover:bg-bg-subtle/60 cursor-pointer rounded-md transition-colors mx-1"
-      onClick={() => onSelectPrompt(prompt.prompt)}
-    >
+    <div className="flex items-start gap-2 px-3 py-1.5 mx-1">
       <button
         onClick={(e) => {
           e.stopPropagation()
           togglePin(prompt.id)
         }}
-        className={`mt-0.5 text-[11px] shrink-0 ${
-          prompt.pinned ? 'text-attention-fg' : 'text-fg-subtle opacity-0 group-hover:opacity-100'
-        } transition-opacity`}
+        className={`mt-1.5 text-[11px] shrink-0 ${
+          prompt.pinned ? 'text-attention-fg' : 'text-fg-subtle hover:text-fg-muted'
+        } transition-colors`}
       >
         ★
       </button>
-      <div className="flex-1 min-w-0">
-        <div className="text-[12px] text-fg-default truncate">{prompt.prompt}</div>
-        <div className="text-[10px] text-fg-subtle mt-0.5">{formatTime(prompt.timestamp)}</div>
+      <div
+        className="group relative flex-1 min-w-0 bg-bg-subtle/80 border border-border-subtle rounded-lg px-3 py-2 cursor-pointer hover:border-border-default transition-colors"
+        onClick={() => onSelectPrompt(prompt.prompt)}
+      >
+        <button
+          onClick={(e) => handleCopy(e, prompt.id, prompt.prompt)}
+          className="absolute top-1.5 right-1.5 text-[10px] px-1 py-0.5 rounded bg-bg-default/80 border border-border-muted text-fg-subtle hover:text-fg-default opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          {copiedId === prompt.id ? '✓' : '⧉'}
+        </button>
+        <div className="text-[12px] text-fg-default whitespace-pre-wrap break-words pr-5">{prompt.prompt}</div>
+        <div className="text-[10px] text-fg-subtle mt-1">{formatTime(prompt.timestamp)}</div>
       </div>
     </div>
   )

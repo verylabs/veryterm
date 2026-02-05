@@ -10,12 +10,13 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 export default function App() {
   const { loadProjects, loaded: projectsLoaded, addProject } = useProjectStore()
   const { loadPrompts, loaded: promptsLoaded } = usePromptStore()
-  const { toggleSidebar, setSearchFocused, cycleFocusedPanel } = useUIStore()
+  const { toggleSidebar, setSearchFocused, cycleFocusedPanel, loadLayout } = useUIStore()
 
   useEffect(() => {
     loadProjects()
     loadPrompts()
-  }, [loadProjects, loadPrompts])
+    loadLayout()
+  }, [loadProjects, loadPrompts, loadLayout])
 
   // Prevent Electron from opening dropped files — let Sidebar handle drops
   useEffect(() => {

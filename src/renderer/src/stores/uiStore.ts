@@ -3,6 +3,13 @@ import { create } from 'zustand'
 type FocusedPanel = 'main' | 'server' | 'prompts'
 export type LayoutMode = 'rows' | 'right-split' | 'bottom-split'
 
+interface LayoutData {
+  layoutMode: LayoutMode
+  panelSizes: [number, number, number]
+  splitRatio: number
+  secondarySplit: number
+}
+
 interface UIState {
   sidebarCollapsed: boolean
   focusedPanel: FocusedPanel
@@ -29,9 +36,21 @@ interface UIState {
   setLayoutMode: (mode: LayoutMode) => void
   setSplitRatio: (ratio: number) => void
   setSecondarySplit: (ratio: number) => void
+  loadLayout: () => Promise<void>
 }
 
 const PANEL_ORDER: FocusedPanel[] = ['main', 'server', 'prompts']
+const LAYOUT_FILE = 'layout.json'
+
+function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number }): void {
+  const data: LayoutData = {
+    layoutMode: state.layoutMode,
+    panelSizes: state.panelSizes,
+    splitRatio: state.splitRatio,
+    secondarySplit: state.secondarySplit
+  }
+  window.api.data.save(LAYOUT_FILE, data)
+}
 
 export const useUIStore = create<UIState>((set, get) => ({
   sidebarCollapsed: false,
@@ -40,7 +59,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   settingsOpen: false,
   serverRunning: {},
   panelSizes: [40, 30, 30],
-  layoutMode: 'rows',
+  layoutMode: 'right-split',
   splitRatio: 50,
   secondarySplit: 50,
 
@@ -57,7 +76,10 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setSearchFocused: (focused) => set({ searchFocused: focused }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
-  setPanelSizes: (sizes) => set({ panelSizes: sizes }),
+  setPanelSizes: (sizes) => {
+    set({ panelSizes: sizes })
+    saveLayout({ ...get(), panelSizes: sizes })
+  },
   setServerRunning: (projectId, running) =>
     set((s) => ({ serverRunning: { ...s.serverRunning, [projectId]: running } })),
   clearServerRunning: (projectId) =>
@@ -65,7 +87,37 @@ export const useUIStore = create<UIState>((set, get) => ({
       const { [projectId]: _, ...rest } = s.serverRunning
       return { serverRunning: rest }
     }),
-  setLayoutMode: (mode) => set({ layoutMode: mode }),
-  setSplitRatio: (ratio) => set({ splitRatio: Math.max(20, Math.min(80, ratio)) }),
-  setSecondarySplit: (ratio) => set({ secondarySplit: Math.max(20, Math.min(80, ratio)) })
+  setLayoutMode: (mode) => {
+    set({ layoutMode: mode })
+    saveLayout({ ...get(), layoutMode: mode })
+  },
+  setSplitRatio: (ratio) => {
+    const clamped = Math.max(20, Math.min(80, ratio))
+    set({ splitRatio: clamped })
+    saveLayout({ ...get(), splitRatio: clamped })
+  },
+  setSecondarySplit: (ratio) => {
+    const clamped = Math.max(20, Math.min(80, ratio))
+    set({ secondarySplit: clamped })
+    saveLayout({ ...get(), secondarySplit: clamped })
+  },
+
+  loadLayout: async () => {
+    const data = await window.api.data.load(LAYOUT_FILE) as LayoutData | null
+    if (!data) return
+    const updates: Partial<UIState> = {}
+    if (data.layoutMode && ['rows', 'right-split', 'bottom-split'].includes(data.layoutMode)) {
+      updates.layoutMode = data.layoutMode
+    }
+    if (Array.isArray(data.panelSizes) && data.panelSizes.length === 3) {
+      updates.panelSizes = data.panelSizes
+    }
+    if (typeof data.splitRatio === 'number') {
+      updates.splitRatio = Math.max(20, Math.min(80, data.splitRatio))
+    }
+    if (typeof data.secondarySplit === 'number') {
+      updates.secondarySplit = Math.max(20, Math.min(80, data.secondarySplit))
+    }
+    set(updates)
+  }
 }))
