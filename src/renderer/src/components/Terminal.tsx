@@ -49,7 +49,7 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     const term = new XTerm({
       theme: {
-        background: '#292c33',
+        background: '#21272c', // compensated for brightness(0.75) → appears as #191d21
         foreground: '#ffffff',
         cursor: '#ffffff',
         cursorAccent: '#363a43',
@@ -85,11 +85,10 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
     term.loadAddon(webLinksAddon)
     term.open(containerRef.current)
 
-    // Force xterm viewport background to match theme
-    const viewport = containerRef.current.querySelector('.xterm-viewport') as HTMLElement
-    if (viewport) viewport.style.backgroundColor = '#292c33'
-    const screen = containerRef.current.querySelector('.xterm-screen') as HTMLElement
-    if (screen) screen.style.backgroundColor = '#292c33'
+    // Force all xterm background elements to compensated color via CSS !important
+    const bgStyle = document.createElement('style')
+    bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #21272c !important; }`
+    containerRef.current.appendChild(bgStyle)
 
     xtermRef.current = term
     fitAddonRef.current = fitAddon
@@ -148,7 +147,8 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
   return (
     <div
-      className="w-full h-full bg-bg-inset p-2 pr-1"
+      className="w-full h-full p-2 pr-1"
+      style={{ filter: 'brightness(0.75)', backgroundColor: '#21272c' }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
