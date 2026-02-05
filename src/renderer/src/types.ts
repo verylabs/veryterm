@@ -1,8 +1,17 @@
+export interface Category {
+  id: string
+  name: string
+  collapsed: boolean
+}
+
 export interface Project {
   id: string
   name: string
   path: string
   color?: string
+  icon?: string
+  category?: string
+  cliCommand?: string
   serverCommand?: string
   projectType?: string
   autoStartClaude?: boolean

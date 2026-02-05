@@ -11,6 +11,7 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
   const { prompts, togglePin } = usePromptStore()
   const { searchFocused, setSearchFocused } = useUIStore()
   const [search, setSearch] = useState('')
+  const [sortNewest, setSortNewest] = useState(true)
   const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -22,12 +23,18 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
   }, [searchFocused, setSearchFocused])
 
   const projectPrompts = useMemo(() => {
-    const filtered = prompts.filter((p) => p.projectId === projectId)
-    if (!search) return filtered
-    return filtered.filter((p) =>
-      p.prompt.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [prompts, projectId, search])
+    let filtered = prompts.filter((p) => p.projectId === projectId)
+    if (search) {
+      filtered = filtered.filter((p) =>
+        p.prompt.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+    const sorted = [...filtered].sort((a, b) => {
+      const diff = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      return sortNewest ? diff : -diff
+    })
+    return sorted
+  }, [prompts, projectId, search, sortNewest])
 
   const pinned = projectPrompts.filter((p) => p.pinned)
   const unpinned = projectPrompts.filter((p) => !p.pinned)
@@ -52,30 +59,38 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
   }, [])
 
   const PromptItem = ({ prompt }: { prompt: typeof projectPrompts[0] }) => (
-    <div className="flex items-start gap-2 px-3 py-1.5 mx-1">
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          togglePin(prompt.id)
-        }}
-        className={`mt-1.5 text-[11px] shrink-0 ${
-          prompt.pinned ? 'text-attention-fg' : 'text-fg-subtle hover:text-fg-muted'
-        } transition-colors`}
-      >
-        ★
-      </button>
+    <div className="px-3 py-1 mx-1">
       <div
-        className="group relative flex-1 min-w-0 bg-bg-subtle/80 border border-border-subtle rounded-lg px-3 py-2 cursor-pointer hover:border-border-default transition-colors"
+        className="group relative min-w-0 bg-border-muted/20 border border-border-muted/60 rounded-lg px-3 py-2 cursor-pointer hover:border-border-default/80 transition-colors"
         onClick={() => onSelectPrompt(prompt.prompt)}
       >
+        {/* Copy button */}
         <button
           onClick={(e) => handleCopy(e, prompt.id, prompt.prompt)}
-          className="absolute top-1.5 right-1.5 text-[10px] px-1 py-0.5 rounded bg-bg-default/80 border border-border-muted text-fg-subtle hover:text-fg-default opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-1.5 right-1.5 text-[10px] px-1 py-0.5 rounded bg-bg-default/60 border border-border-muted text-fg-subtle hover:text-fg-default opacity-0 group-hover:opacity-100 transition-opacity"
         >
           {copiedId === prompt.id ? '✓' : '⧉'}
         </button>
+
+        {/* Prompt text */}
         <div className="text-[12px] text-fg-default whitespace-pre-wrap break-words pr-5">{prompt.prompt}</div>
-        <div className="text-[10px] text-fg-subtle mt-1">{formatTime(prompt.timestamp)}</div>
+
+        {/* Bottom row: time + pin */}
+        <div className="flex items-center justify-between mt-1.5">
+          <span className="text-[10px] text-fg-subtle">{formatTime(prompt.timestamp)}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              togglePin(prompt.id)
+            }}
+            className={`text-[11px] transition-colors ${
+              prompt.pinned ? 'text-attention-fg' : 'text-fg-subtle/40 hover:text-fg-subtle'
+            }`}
+            title={prompt.pinned ? '즐겨찾기 해제' : '즐겨찾기'}
+          >
+            {prompt.pinned ? '★' : '☆'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -84,9 +99,15 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
     <div className="h-full flex flex-col bg-bg-inset">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 leading-none border-b border-border-muted bg-bg-default" style={{ height: 32, minHeight: 32, maxHeight: 32 }}>
-        <span className="text-xs font-medium text-fg-default uppercase tracking-wider">Prompts</span>
+        <span className="text-xs font-medium text-fg-subtle uppercase tracking-wider">Prompts</span>
+        <button
+          onClick={() => setSortNewest(!sortNewest)}
+          className="text-[10px] px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-subtle hover:text-fg-default transition-colors"
+          title={sortNewest ? '오래된 순' : '최신 순'}
+        >
+          {sortNewest ? '↓ 최신' : '↑ 과거'}
+        </button>
         <div className="flex-1" />
-        <kbd className="text-[10px] px-1 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-subtle font-mono">⌘F</kbd>
         <input
           ref={searchRef}
           type="text"
@@ -98,8 +119,8 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
               searchRef.current?.blur()
             }
           }}
-          placeholder="Filter..."
-          className="w-36 px-2 py-1 text-[12px] bg-bg-inset border border-border-default rounded-md text-fg-default placeholder-fg-subtle focus:outline-none focus:border-accent-fg/50"
+          placeholder="⌘F 검색..."
+          className="w-32 px-2 py-1 text-[11px] bg-bg-inset border border-border-default rounded-md text-fg-default placeholder-fg-subtle focus:outline-none focus:border-accent-fg/50"
         />
       </div>
 
@@ -123,7 +144,7 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
         {unpinned.length > 0 && (
           <>
             {pinned.length > 0 && (
-              <div className="px-3 py-1 text-[10px] text-fg-subtle uppercase tracking-wider font-medium">
+              <div className="px-3 py-1 mt-1 text-[10px] text-fg-subtle uppercase tracking-wider font-medium">
                 Recent
               </div>
             )}

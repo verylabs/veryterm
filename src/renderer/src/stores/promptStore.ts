@@ -31,10 +31,16 @@ export const usePromptStore = create<PromptState>((set, get) => ({
   },
 
   addPrompt: (projectId: string, prompt: string) => {
+    const trimmed = prompt.trim()
+    const exists = get().prompts.some(
+      (p) => p.projectId === projectId && p.prompt === trimmed
+    )
+    if (exists) return
+
     const entry: PromptHistory = {
       id: uuidv4(),
       projectId,
-      prompt: prompt.trim(),
+      prompt: trimmed,
       timestamp: new Date().toISOString(),
       pinned: false
     }

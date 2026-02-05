@@ -126,8 +126,27 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
     return cleanup
   }, [sessionId, handleResize])
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!sessionIdRef.current) return
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+    const paths = files.map((f) => window.api.getPathForFile(f))
+    window.api.terminal.write(sessionIdRef.current, paths.join(' '))
+  }, [])
+
   return (
-    <div className="w-full h-full bg-bg-inset p-2 pr-1">
+    <div
+      className="w-full h-full bg-bg-inset p-2 pr-1"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <div ref={containerRef} className="w-full h-full" />
     </div>
   )

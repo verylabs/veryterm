@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useProjectStore } from '../stores/projectStore'
+import { useUIStore } from '../stores/uiStore'
 
 interface ShortcutActions {
   onAddProject: () => void
@@ -8,13 +9,24 @@ interface ShortcutActions {
   onTogglePanelFocus: () => void
 }
 
+const PANEL_MAP = ['main', 'server', 'prompts'] as const
+
 export function useKeyboardShortcuts(actions: ShortcutActions) {
   const { projects, setActiveProject } = useProjectStore()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey
+      // Option+1/2/3: Switch panel
+      if (e.altKey && !e.metaKey && !e.ctrlKey) {
+        if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3') {
+          e.preventDefault()
+          const idx = parseInt(e.code.replace('Digit', '')) - 1
+          useUIStore.getState().setFocusedPanel(PANEL_MAP[idx])
+          return
+        }
+      }
 
+      const isMeta = e.metaKey || e.ctrlKey
       if (!isMeta) return
 
       // Cmd+1~9: Switch project by index

@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import type { Project } from '../types'
+import type { Project, Category } from '../types'
 
 interface ProjectState {
   projects: Project[]
+  categories: Category[]
   activeProjectId: string | null
   loaded: boolean
 
@@ -13,25 +14,41 @@ interface ProjectState {
   removeProject: (id: string) => void
   setActiveProject: (id: string) => void
   updateProject: (id: string, updates: Partial<Project>) => void
+
+  addCategory: (name: string) => void
+  removeCategory: (id: string) => void
+  renameCategory: (id: string, name: string) => void
+  toggleCategoryCollapse: (id: string) => void
+  moveProjectToCategory: (projectId: string, categoryId: string | null) => void
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [],
+  categories: [],
   activeProjectId: null,
   loaded: false,
 
   loadProjects: async () => {
-    const data = await window.api.data.load('projects.json') as { projects: Project[]; activeProjectId: string | null } | null
+    const data = await window.api.data.load('projects.json') as {
+      projects: Project[]
+      categories?: Category[]
+      activeProjectId: string | null
+    } | null
     if (data) {
-      set({ projects: data.projects, activeProjectId: data.activeProjectId, loaded: true })
+      set({
+        projects: data.projects,
+        categories: data.categories || [],
+        activeProjectId: data.activeProjectId,
+        loaded: true
+      })
     } else {
       set({ loaded: true })
     }
   },
 
   saveProjects: async () => {
-    const { projects, activeProjectId } = get()
-    await window.api.data.save('projects.json', { projects, activeProjectId })
+    const { projects, categories, activeProjectId } = get()
+    await window.api.data.save('projects.json', { projects, categories, activeProjectId })
   },
 
   addProject: async (projectPath: string) => {
@@ -78,6 +95,53 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((state) => ({
       projects: state.projects.map((p) =>
         p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
+      )
+    }))
+    get().saveProjects()
+  },
+
+  addCategory: (name: string) => {
+    const category: Category = {
+      id: uuidv4(),
+      name,
+      collapsed: false
+    }
+    set((state) => ({ categories: [...state.categories, category] }))
+    get().saveProjects()
+  },
+
+  removeCategory: (id: string) => {
+    set((state) => ({
+      categories: state.categories.filter((c) => c.id !== id),
+      projects: state.projects.map((p) =>
+        p.category === id ? { ...p, category: undefined } : p
+      )
+    }))
+    get().saveProjects()
+  },
+
+  renameCategory: (id: string, name: string) => {
+    set((state) => ({
+      categories: state.categories.map((c) =>
+        c.id === id ? { ...c, name } : c
+      )
+    }))
+    get().saveProjects()
+  },
+
+  toggleCategoryCollapse: (id: string) => {
+    set((state) => ({
+      categories: state.categories.map((c) =>
+        c.id === id ? { ...c, collapsed: !c.collapsed } : c
+      )
+    }))
+    get().saveProjects()
+  },
+
+  moveProjectToCategory: (projectId: string, categoryId: string | null) => {
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? { ...p, category: categoryId || undefined } : p
       )
     }))
     get().saveProjects()

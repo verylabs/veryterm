@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useProjectStore } from '../stores/projectStore'
 import type { Project } from '../types'
 
@@ -18,29 +18,64 @@ const COLOR_OPTIONS = [
   { value: '#f778ba', label: '분홍', className: 'bg-[#f778ba]' }
 ]
 
+const ICON_OPTIONS = [
+  '', '🚀', '⚡', '🔥', '💻', '🌐', '📱', '🎮',
+  '🛠️', '📦', '🎨', '🧪', '📊', '🔒', '🤖', '💡',
+  '📝', '🏗️', '🎯', '🧩', '🌿', '💎', '🔔', '⭐'
+]
+
 export default function ProjectSettingsModal({ project, onClose }: ProjectSettingsModalProps) {
   const { updateProject } = useProjectStore()
 
   const [name, setName] = useState(project.name)
+  const [cliCommand, setCliCommand] = useState(project.cliCommand || '')
   const [serverCommand, setServerCommand] = useState(project.serverCommand || '')
   const [autoStartClaude, setAutoStartClaude] = useState(project.autoStartClaude || false)
   const [color, setColor] = useState(project.color)
+  const [icon, setIcon] = useState(project.icon || '')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const size = 128
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')!
+        const scale = Math.max(size / img.width, size / img.height)
+        const w = img.width * scale
+        const h = img.height * scale
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+        setIcon(canvas.toDataURL('image/png'))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }, [])
 
   const handleSave = () => {
     updateProject(project.id, {
       name,
+      cliCommand: cliCommand || undefined,
       serverCommand: serverCommand || undefined,
       autoStartClaude,
-      color
+      color,
+      icon: icon || undefined
     })
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onMouseDown={onClose}>
       <div
         className="bg-bg-overlay border border-border-default rounded-xl w-[420px] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-muted">
@@ -66,6 +101,18 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
             />
           </div>
 
+          {/* CLI Command */}
+          <div>
+            <label className="block text-xs text-fg-subtle mb-1.5">CLI 명령어</label>
+            <input
+              type="text"
+              value={cliCommand}
+              onChange={(e) => setCliCommand(e.target.value)}
+              placeholder="claude"
+              className="w-full px-3 py-2 text-sm bg-bg-inset border border-border-default rounded-lg text-fg-default placeholder-fg-subtle focus:outline-none focus:border-accent-fg/50 font-mono"
+            />
+          </div>
+
           {/* Server Command */}
           <div>
             <label className="block text-xs text-fg-subtle mb-1.5">서버 실행 명령어</label>
@@ -76,6 +123,60 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
               placeholder="npm run dev"
               className="w-full px-3 py-2 text-sm bg-bg-inset border border-border-default rounded-lg text-fg-default placeholder-fg-subtle focus:outline-none focus:border-accent-fg/50 font-mono"
             />
+          </div>
+
+          {/* Icon */}
+          <div>
+            <label className="block text-xs text-fg-subtle mb-1.5">아이콘</label>
+            <div className="flex items-start gap-3 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-bg-inset border border-border-default flex items-center justify-center text-2xl overflow-hidden shrink-0">
+                {icon.startsWith('data:') ? (
+                  <img src={icon} alt="icon" className="w-full h-full object-cover" />
+                ) : icon ? (
+                  icon
+                ) : (
+                  <span className="text-fg-subtle text-xs">없음</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs bg-bg-inset border border-border-default rounded-lg text-fg-default hover:bg-bg-subtle transition-colors"
+                >
+                  이미지 업로드
+                </button>
+                {icon && (
+                  <button
+                    onClick={() => setIcon('')}
+                    className="px-3 py-1.5 text-xs text-fg-subtle hover:text-danger-fg transition-colors"
+                  >
+                    제거
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+            <div className="grid grid-cols-8 gap-1">
+              {ICON_OPTIONS.map((ic) => (
+                <button
+                  key={ic || '__none'}
+                  onClick={() => setIcon(ic)}
+                  className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-colors ${
+                    icon === ic
+                      ? 'bg-accent-emphasis/20 ring-1 ring-accent-fg'
+                      : 'hover:bg-bg-subtle'
+                  }`}
+                >
+                  {ic || <span className="text-[10px] text-fg-subtle">없음</span>}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Color */}
@@ -95,9 +196,9 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
             </div>
           </div>
 
-          {/* Auto Start Claude */}
+          {/* Auto Start CLI */}
           <div className="flex items-center justify-between">
-            <label className="text-xs text-fg-subtle">프로젝트 열 때 Claude CLI 자동 시작</label>
+            <label className="text-xs text-fg-subtle">프로젝트 열 때 CLI 자동 시작</label>
             <button
               onClick={() => setAutoStartClaude(!autoStartClaude)}
               className={`w-9 h-5 rounded-full transition-colors relative ${

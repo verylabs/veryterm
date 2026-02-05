@@ -37,6 +37,14 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       sessionsRef.current = { main: mainSid, server: serverSid }
       setMainSessionId(mainSid)
       setServerSessionId(serverSid)
+
+      // Auto start CLI
+      if (project.autoStartClaude && mainSid) {
+        const cmd = project.cliCommand || 'claude'
+        setTimeout(() => {
+          window.api.terminal.write(mainSid, cmd + '\n')
+        }, 300)
+      }
     }
     setup()
     return () => {
@@ -166,7 +174,22 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       onClick={() => setFocusedPanel('main')}
     >
       <div className={panelHeaderClass} style={panelHeaderStyle}>
-        <span>Claude CLI</span>
+        <span>CLI</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-fg-subtle font-mono normal-case text-[10px]">{project.cliCommand || 'claude'}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (mainSessionId) {
+                const cmd = project.cliCommand || 'claude'
+                window.api.terminal.write(mainSessionId, cmd + '\n')
+              }
+            }}
+            className="px-2 py-0.5 text-[10px] font-semibold rounded bg-accent-emphasis/80 text-white hover:bg-accent-emphasis transition-colors normal-case tracking-normal"
+          >
+            RUN
+          </button>
+        </div>
       </div>
       <div className="flex-1 min-h-0">
         <Terminal sessionId={mainSessionId} onInput={handleMainInput} />
@@ -185,9 +208,35 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
           <span>Server</span>
           {serverRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
         </div>
-        {project.serverCommand && (
-          <span className="text-fg-subtle font-mono normal-case">{project.serverCommand}</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {project.serverCommand && (
+            <span className="text-fg-subtle font-mono normal-case text-[10px]">{project.serverCommand}</span>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (serverSessionId && project.serverCommand) {
+                window.api.terminal.write(serverSessionId, project.serverCommand + '\n')
+                setServerRunning(project.id, true)
+              }
+            }}
+            className="px-2 py-0.5 text-[10px] font-semibold rounded bg-success-fg/80 text-white hover:bg-success-fg transition-colors normal-case tracking-normal"
+          >
+            RUN
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (serverSessionId) {
+                window.api.terminal.write(serverSessionId, '\x03')
+                setServerRunning(project.id, false)
+              }
+            }}
+            className="px-2 py-0.5 text-[10px] font-semibold rounded bg-danger-fg/80 text-white hover:bg-danger-fg transition-colors normal-case tracking-normal"
+          >
+            STOP
+          </button>
+        </div>
       </div>
       <div className="flex-1 min-h-0">
         <Terminal sessionId={serverSessionId} onInput={handleServerInput} />
