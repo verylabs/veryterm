@@ -49,7 +49,7 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     const term = new XTerm({
       theme: {
-        background: '#21272c', // compensated for brightness(0.75) → appears as #191d21
+        background: '#1f2529', // compensated for brightness(0.8) → appears as #191d21
         foreground: '#ffffff',
         cursor: '#ffffff',
         cursorAccent: '#363a43',
@@ -73,7 +73,9 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
         brightWhite: '#eaeaea'
       },
       fontSize: 13,
-      fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, monospace",
+      lineHeight: 1.2,
+      fontWeight: '300',
+      fontFamily: "'Monaspace Neon', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
       cursorBlink: true,
       allowProposedApi: true
     })
@@ -87,7 +89,7 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     // Force all xterm background elements to compensated color via CSS !important
     const bgStyle = document.createElement('style')
-    bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #21272c !important; }`
+    bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #1f2529 !important; }`
     containerRef.current.appendChild(bgStyle)
 
     xtermRef.current = term
@@ -148,7 +150,7 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
   return (
     <div
       className="w-full h-full p-2 pr-1"
-      style={{ filter: 'brightness(0.75)', backgroundColor: '#21272c' }}
+      style={{ filter: 'brightness(0.8)', backgroundColor: '#1f2529' }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
