@@ -19,6 +19,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     layoutMode, splitRatio, setSplitRatio, secondarySplit, setSecondarySplit
   } = useUIStore()
   const serverRunning = useUIStore((s) => s.serverRunning[project.id])
+  const cliWorking = useUIStore((s) => s.cliWorking[project.id])
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [mainSessionId, setMainSessionId] = useState<string | null>(null)
@@ -28,6 +29,8 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     main: null,
     server: null
   })
+  const lastDataRef = useRef(0)
+  const wasWorkingRef = useRef(false)
 
   // Create sessions on mount, kill on unmount
   useEffect(() => {
@@ -66,6 +69,36 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     return cleanup
   }, [serverSessionId, project.id, project.name, setServerRunning])
 
+  // CLI activity tracking: listen to terminal:data for the main session
+  useEffect(() => {
+    if (!mainSessionId) return
+    const cleanup = window.api.terminal.onData((sid, _data) => {
+      if (sid === mainSessionId) {
+        lastDataRef.current = Date.now()
+        if (!wasWorkingRef.current) {
+          wasWorkingRef.current = true
+          useUIStore.getState().setCLIWorking(project.id, true)
+        }
+      }
+    })
+    const interval = setInterval(() => {
+      if (lastDataRef.current === 0) return
+      const idle = Date.now() - lastDataRef.current > 3000
+      if (idle && wasWorkingRef.current) {
+        wasWorkingRef.current = false
+        useUIStore.getState().setCLIWorking(project.id, false)
+        if (useUIStore.getState().notificationsEnabled) {
+          window.api.notify('VTerm', `CLI finished (${project.name})`)
+          window.api.dock.bounce()
+        }
+      }
+    }, 1000)
+    return () => {
+      cleanup()
+      clearInterval(interval)
+    }
+  }, [mainSessionId, project.id, project.name])
+
   const handleMainInput = useCallback(
     (data: string) => {
       if (data === '\r' || data === '\n') {
@@ -74,9 +107,15 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         inputBufferRef.current = ''
         return
       }
-      if (data === '\x7f') { inputBufferRef.current = inputBufferRef.current.slice(0, -1); return }
       if (data === '\x03' || data === '\x04') { inputBufferRef.current = ''; return }
-      if (data.length === 1 && data.charCodeAt(0) >= 32) inputBufferRef.current += data
+      // Process each character — handles Korean IME multi-char data (e.g. \x08+composed char)
+      for (const ch of data) {
+        if (ch === '\x7f' || ch === '\x08') {
+          inputBufferRef.current = inputBufferRef.current.slice(0, -1)
+        } else if (ch.charCodeAt(0) >= 32) {
+          inputBufferRef.current += ch
+        }
+      }
     },
     [project.id, addPrompt]
   )
@@ -174,7 +213,10 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       onClick={() => setFocusedPanel('main')}
     >
       <div className={panelHeaderClass} style={panelHeaderStyle}>
-        <span>CLI</span>
+        <div className="flex items-center gap-2">
+          <span>CLI</span>
+          {cliWorking && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
+        </div>
         <div className="flex items-center gap-1.5">
           <span className="text-fg-subtle font-mono normal-case text-[10px]">{project.cliCommand || 'claude'}</span>
           <button
@@ -212,30 +254,33 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
           {project.serverCommand && (
             <span className="text-fg-subtle font-mono normal-case text-[10px]">{project.serverCommand}</span>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (serverSessionId && project.serverCommand) {
-                window.api.terminal.write(serverSessionId, project.serverCommand + '\n')
-                setServerRunning(project.id, true)
-              }
-            }}
-            className="px-2 py-0.5 text-[10px] font-semibold rounded bg-success-fg/80 text-white hover:bg-success-fg transition-colors normal-case tracking-normal"
-          >
-            RUN
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (serverSessionId) {
-                window.api.terminal.write(serverSessionId, '\x03')
-                setServerRunning(project.id, false)
-              }
-            }}
-            className="px-2 py-0.5 text-[10px] font-semibold rounded bg-danger-fg/80 text-white hover:bg-danger-fg transition-colors normal-case tracking-normal"
-          >
-            STOP
-          </button>
+          {serverRunning ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (serverSessionId) {
+                  window.api.terminal.write(serverSessionId, '\x03')
+                  setServerRunning(project.id, false)
+                }
+              }}
+              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-danger-fg/80 text-white hover:bg-danger-fg transition-colors normal-case tracking-normal"
+            >
+              STOP
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (serverSessionId && project.serverCommand) {
+                  window.api.terminal.write(serverSessionId, project.serverCommand + '\n')
+                  setServerRunning(project.id, true)
+                }
+              }}
+              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-success-fg/80 text-white hover:bg-success-fg transition-colors normal-case tracking-normal"
+            >
+              RUN
+            </button>
+          )}
         </div>
       </div>
       <div className="flex-1 min-h-0">

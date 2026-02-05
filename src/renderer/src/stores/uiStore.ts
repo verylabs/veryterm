@@ -8,6 +8,7 @@ interface LayoutData {
   panelSizes: [number, number, number]
   splitRatio: number
   secondarySplit: number
+  notificationsEnabled?: boolean
 }
 
 interface UIState {
@@ -16,6 +17,8 @@ interface UIState {
   searchFocused: boolean
   settingsOpen: boolean
   serverRunning: Record<string, boolean> // projectId -> running
+  cliWorking: Record<string, boolean> // projectId -> working (CLI outputting)
+  notificationsEnabled: boolean
 
   // Panel heights as percentages (must sum to 100)
   panelSizes: [number, number, number] // [main, server, prompts]
@@ -33,6 +36,8 @@ interface UIState {
   setPanelSizes: (sizes: [number, number, number]) => void
   setServerRunning: (projectId: string, running: boolean) => void
   clearServerRunning: (projectId: string) => void
+  setCLIWorking: (projectId: string, working: boolean) => void
+  toggleNotifications: () => void
   setLayoutMode: (mode: LayoutMode) => void
   setSplitRatio: (ratio: number) => void
   setSecondarySplit: (ratio: number) => void
@@ -42,12 +47,13 @@ interface UIState {
 const PANEL_ORDER: FocusedPanel[] = ['main', 'server', 'prompts']
 const LAYOUT_FILE = 'layout.json'
 
-function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number }): void {
+function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number; notificationsEnabled: boolean }): void {
   const data: LayoutData = {
     layoutMode: state.layoutMode,
     panelSizes: state.panelSizes,
     splitRatio: state.splitRatio,
-    secondarySplit: state.secondarySplit
+    secondarySplit: state.secondarySplit,
+    notificationsEnabled: state.notificationsEnabled
   }
   window.api.data.save(LAYOUT_FILE, data)
 }
@@ -58,6 +64,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   searchFocused: false,
   settingsOpen: false,
   serverRunning: {},
+  cliWorking: {},
+  notificationsEnabled: true,
   panelSizes: [40, 30, 30],
   layoutMode: 'right-split',
   splitRatio: 50,
@@ -87,6 +95,13 @@ export const useUIStore = create<UIState>((set, get) => ({
       const { [projectId]: _, ...rest } = s.serverRunning
       return { serverRunning: rest }
     }),
+  setCLIWorking: (projectId, working) =>
+    set((s) => ({ cliWorking: { ...s.cliWorking, [projectId]: working } })),
+  toggleNotifications: () => {
+    const next = !get().notificationsEnabled
+    set({ notificationsEnabled: next })
+    saveLayout({ ...get(), notificationsEnabled: next })
+  },
   setLayoutMode: (mode) => {
     set({ layoutMode: mode })
     saveLayout({ ...get(), layoutMode: mode })
@@ -117,6 +132,9 @@ export const useUIStore = create<UIState>((set, get) => ({
     }
     if (typeof data.secondarySplit === 'number') {
       updates.secondarySplit = Math.max(20, Math.min(80, data.secondarySplit))
+    }
+    if (typeof data.notificationsEnabled === 'boolean') {
+      updates.notificationsEnabled = data.notificationsEnabled
     }
     set(updates)
   }

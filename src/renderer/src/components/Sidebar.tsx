@@ -14,6 +14,7 @@ export default function Sidebar() {
     toggleCategoryCollapse, moveProjectToCategory, reorderProject
   } = useProjectStore()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
+  const cliWorking = useUIStore((s) => s.cliWorking)
 
   const [settingsProject, setSettingsProject] = useState<Project | null>(null)
   const [folderDragOver, setFolderDragOver] = useState(false)
@@ -210,18 +211,25 @@ export default function Sidebar() {
           : 'text-fg-default hover:bg-bg-subtle/60 hover:text-fg-default'
       }`}
     >
-      <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-sm overflow-hidden"
-        style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
-      >
-        {project.icon?.startsWith('data:') ? (
-          <img src={project.icon} alt="" className="w-full h-full object-cover" />
-        ) : project.icon ? (
-          project.icon
-        ) : (
-          <div
-            className={`w-2 h-2 rounded-full ${getStatusClass(project)}`}
-            style={getStatusStyle(project)}
-          />
+      <div className="relative w-7 h-7 shrink-0">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm overflow-hidden"
+          style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
+        >
+          {project.icon?.startsWith('data:') ? (
+            <img src={project.icon} alt="" className="w-full h-full object-cover" />
+          ) : project.icon ? (
+            project.icon
+          ) : (
+            <div
+              className={`w-2 h-2 rounded-full ${getStatusClass(project)}`}
+              style={getStatusStyle(project)}
+            />
+          )}
+        </div>
+        {cliWorking[project.id] !== undefined && (
+          <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
+            cliWorking[project.id] ? 'bg-success-fg animate-pulse' : 'bg-danger-fg'
+          }`} />
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -279,21 +287,28 @@ export default function Sidebar() {
               }`}
               title={`${project.name} (⌘${idx + 1})`}
             >
-              {project.icon?.startsWith('data:') ? (
-                <img src={project.icon} alt="" className="w-7 h-7 rounded-lg object-cover" />
-              ) : project.icon ? (
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
-                  style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
-                >
-                  {project.icon}
-                </div>
-              ) : (
-                <div
-                  className={`w-2.5 h-2.5 rounded-full ${getStatusClass(project)}`}
-                  style={getStatusStyle(project)}
-                />
-              )}
+              <div className="relative">
+                {project.icon?.startsWith('data:') ? (
+                  <img src={project.icon} alt="" className="w-7 h-7 rounded-lg object-cover" />
+                ) : project.icon ? (
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                    style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
+                  >
+                    {project.icon}
+                  </div>
+                ) : (
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full ${getStatusClass(project)}`}
+                    style={getStatusStyle(project)}
+                  />
+                )}
+                {cliWorking[project.id] !== undefined && (
+                  <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
+                    cliWorking[project.id] ? 'bg-success-fg animate-pulse' : 'bg-danger-fg'
+                  }`} />
+                )}
+              </div>
             </button>
           ))}
         </div>

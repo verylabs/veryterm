@@ -55,7 +55,12 @@ const api = {
 
   // Notification
   notify: (title: string, body: string): void =>
-    ipcRenderer.send('notify', title, body)
+    ipcRenderer.send('notify', title, body),
+
+  // Dock
+  dock: {
+    bounce: (): void => ipcRenderer.send('dock:bounce')
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -48,7 +48,7 @@ ipcMain.handle('terminal:create', (_event, projectId: string, type: 'main' | 'se
   const cols = 80
   const rows = 24
 
-  const ptyProcess = pty.spawn(shell, [], {
+  const ptyProcess = pty.spawn(shell, ['--login'], {
     name: 'xterm-256color',
     cols,
     rows,
@@ -278,6 +278,16 @@ ipcMain.handle('data:save', (_event, filename: string, data: unknown) => {
 // Notification
 ipcMain.on('notify', (_event, title: string, body: string) => {
   new Notification({ title, body }).show()
+})
+
+// Dock bounce (macOS) — 3 times
+ipcMain.on('dock:bounce', () => {
+  let count = 0
+  const interval = setInterval(() => {
+    app.dock?.bounce('informational')
+    count++
+    if (count >= 3) clearInterval(interval)
+  }, 1000)
 })
 
 // --- App Lifecycle ---

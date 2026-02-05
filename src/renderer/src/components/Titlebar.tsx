@@ -41,6 +41,8 @@ export default function Titlebar() {
   const serverRunning = useUIStore((s) => activeProjectId ? s.serverRunning[activeProjectId] : false)
   const layoutMode = useUIStore((s) => s.layoutMode)
   const setLayoutMode = useUIStore((s) => s.setLayoutMode)
+  const notificationsEnabled = useUIStore((s) => s.notificationsEnabled)
+  const toggleNotifications = useUIStore((s) => s.toggleNotifications)
   const activeProject = projects.find((p) => p.id === activeProjectId)
 
   const layouts: LayoutMode[] = ['rows', 'right-split', 'bottom-split']
@@ -78,6 +80,19 @@ export default function Titlebar() {
       )}
 
       <div className="flex-1" />
+
+      {/* Notification toggle */}
+      <button
+        onClick={toggleNotifications}
+        className={`titlebar-no-drag p-1 mr-2 rounded hover:bg-bg-subtle transition-colors ${notificationsEnabled ? 'text-fg-default' : 'text-fg-subtle'}`}
+        title={notificationsEnabled ? 'Notifications on' : 'Notifications off'}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 13.5a2 2 0 0 0 4 0" />
+          <path d="M13 7c0-2.76-2.24-5-5-5S3 4.24 3 7c0 3.5-1.5 4.5-1.5 4.5h13S13 10.5 13 7z" />
+          {!notificationsEnabled && <line x1="1" y1="1" x2="15" y2="15" strokeWidth="2" />}
+        </svg>
+      </button>
 
       {/* Layout switch buttons */}
       <div className="titlebar-no-drag flex items-center gap-1 mr-4">
