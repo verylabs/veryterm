@@ -108,6 +108,8 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         return
       }
       if (data === '\x03' || data === '\x04') { inputBufferRef.current = ''; return }
+      // Skip ANSI escape sequences (arrow keys, focus events, etc.)
+      if (data.includes('\x1b')) return
       // Process each character — handles Korean IME multi-char data (e.g. \x08+composed char)
       for (const ch of data) {
         if (ch === '\x7f' || ch === '\x08') {
