@@ -1,0 +1,18 @@
+appId: com.vterm.app
+productName: VTerm
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.*'
+  - '!{.eslintignore,.eslintrc.*,.prettierrc.*,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+mac:
+  target:
+    - dmg
+    - zip
+  artifactName: ${name}-${version}-${arch}.${ext}
+  entitlementsInherit: build/entitlements.mac.plist
+dmg:
+  artifactName: ${name}-${version}.${ext}
