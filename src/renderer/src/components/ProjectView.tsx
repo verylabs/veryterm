@@ -31,6 +31,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
   })
   const lastDataRef = useRef(0)
   const wasWorkingRef = useRef(false)
+  const escapeRef = useRef(false)
 
   // Create sessions on mount, kill on unmount
   useEffect(() => {
@@ -109,7 +110,12 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       }
       if (data === '\x03' || data === '\x04') { inputBufferRef.current = ''; return }
       // Skip ANSI escape sequences (arrow keys, focus events, etc.)
-      if (data.includes('\x1b')) return
+      // ESC may arrive in a separate onData call from its continuation ([A, [O, [I, etc.)
+      if (data.includes('\x1b')) { escapeRef.current = true; return }
+      if (escapeRef.current) {
+        escapeRef.current = false
+        return
+      }
       // Process each character — handles Korean IME multi-char data (e.g. \x08+composed char)
       for (const ch of data) {
         if (ch === '\x7f' || ch === '\x08') {
