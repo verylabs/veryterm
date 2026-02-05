@@ -61,7 +61,20 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
     setTimeout(() => setCopiedId(null), 1500)
   }, [])
 
-  const PromptItem = ({ prompt }: { prompt: typeof projectPrompts[0] }) => (
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const PromptItem = ({ prompt }: { prompt: typeof projectPrompts[0] }) => {
+    const isExpanded = expandedIds.has(prompt.id)
+    return (
     <div className="px-1.5 py-1 mx-1">
       <div
         className="group relative min-w-0 bg-border-muted/20 border border-border-muted/60 rounded-lg px-3 py-2 cursor-default hover:border-border-default/80 transition-colors"
@@ -76,7 +89,14 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
         </button>
 
         {/* Prompt text */}
-        <div className="text-[12px] text-fg-default whitespace-pre-wrap break-words pr-5 select-text">{prompt.prompt}</div>
+        <div
+          onClick={() => toggleExpand(prompt.id)}
+          className={`text-[12px] text-fg-default break-words pr-5 select-text cursor-pointer ${
+            isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'
+          }`}
+        >
+          {prompt.prompt}
+        </div>
 
         {/* Bottom row: time + actions */}
         <div className="flex items-center justify-between mt-1.5">
@@ -109,7 +129,8 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
         </div>
       </div>
     </div>
-  )
+    )
+  }
 
   return (
     <div className="h-full flex flex-col bg-bg-inset">
