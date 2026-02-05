@@ -43,78 +43,94 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
     }
   }, [])
 
-  // Initialize xterm once
+  // Initialize xterm once (after font is loaded)
   useEffect(() => {
     if (!containerRef.current) return
 
-    const term = new XTerm({
-      theme: {
-        background: '#1f2529', // compensated for brightness(0.8) → appears as #191d21
-        foreground: '#ffffff',
-        cursor: '#ffffff',
-        cursorAccent: '#363a43',
-        selectionBackground: '#ffffff',
-        selectionForeground: '#292c33',
-        black: '#1d1f21',
-        red: '#bf6b69',
-        green: '#b7bd73',
-        yellow: '#e9c880',
-        blue: '#88a1bb',
-        magenta: '#ad95b8',
-        cyan: '#95bdb7',
-        white: '#c5c8c6',
-        brightBlack: '#666666',
-        brightRed: '#c55757',
-        brightGreen: '#bcc95f',
-        brightYellow: '#e1c65e',
-        brightBlue: '#83a5d6',
-        brightMagenta: '#bc99d4',
-        brightCyan: '#83beb1',
-        brightWhite: '#eaeaea'
-      },
-      fontSize: 13,
-      lineHeight: 1.4,
-      fontWeight: '400',
-      letterSpacing: 1,
-      fontFamily: "'NanumGothicCoding', 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
-      cursorBlink: true,
-      allowProposedApi: true
-    })
+    const container = containerRef.current
+    const cleanupRef = { current: (): void => {} }
 
-    const fitAddon = new FitAddon()
-    const webLinksAddon = new WebLinksAddon()
+    const initTerminal = (): void => {
+      const term = new XTerm({
+        theme: {
+          background: '#1f2529', // compensated for brightness(0.8) → appears as #191d21
+          foreground: '#ffffff',
+          cursor: '#ffffff',
+          cursorAccent: '#363a43',
+          selectionBackground: '#ffffff',
+          selectionForeground: '#292c33',
+          black: '#1d1f21',
+          red: '#bf6b69',
+          green: '#b7bd73',
+          yellow: '#e9c880',
+          blue: '#88a1bb',
+          magenta: '#ad95b8',
+          cyan: '#95bdb7',
+          white: '#c5c8c6',
+          brightBlack: '#666666',
+          brightRed: '#c55757',
+          brightGreen: '#bcc95f',
+          brightYellow: '#e1c65e',
+          brightBlue: '#83a5d6',
+          brightMagenta: '#bc99d4',
+          brightCyan: '#83beb1',
+          brightWhite: '#eaeaea'
+        },
+        fontSize: 13,
+        lineHeight: 1.4,
+        fontWeight: '400',
+        letterSpacing: -1,
+        fontFamily: "'NanumGothicCoding', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
+        cursorBlink: true,
+        allowProposedApi: true
+      })
 
-    term.loadAddon(fitAddon)
-    term.loadAddon(webLinksAddon)
-    term.open(containerRef.current)
+      const fitAddon = new FitAddon()
+      const webLinksAddon = new WebLinksAddon()
 
-    // Force all xterm background elements to compensated color via CSS !important
-    const bgStyle = document.createElement('style')
-    bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #1f2529 !important; }`
-    containerRef.current.appendChild(bgStyle)
+      term.loadAddon(fitAddon)
+      term.loadAddon(webLinksAddon)
+      term.open(container)
 
-    xtermRef.current = term
-    fitAddonRef.current = fitAddon
+      // Force all xterm background elements to compensated color via CSS !important
+      const bgStyle = document.createElement('style')
+      bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #1f2529 !important; }`
+      container.appendChild(bgStyle)
 
-    setTimeout(() => fitAddon.fit(), 50)
+      xtermRef.current = term
+      fitAddonRef.current = fitAddon
 
-    // Use refs so callbacks always see latest values
-    const inputDisposable = term.onData((data) => {
-      if (sessionIdRef.current) {
-        window.api.terminal.write(sessionIdRef.current, data)
+      setTimeout(() => fitAddon.fit(), 50)
+
+      // Use refs so callbacks always see latest values
+      const inputDisposable = term.onData((data) => {
+        if (sessionIdRef.current) {
+          window.api.terminal.write(sessionIdRef.current, data)
+        }
+        onInputRef.current?.(data)
+      })
+
+      const observer = new ResizeObserver(() => handleResize())
+      observer.observe(container)
+
+      cleanupRef.current = () => {
+        inputDisposable.dispose()
+        observer.disconnect()
+        term.dispose()
+        xtermRef.current = null
+        fitAddonRef.current = null
       }
-      onInputRef.current?.(data)
-    })
+    }
 
-    const observer = new ResizeObserver(() => handleResize())
-    observer.observe(containerRef.current)
+    // Wait for fonts to load before initializing xterm so canvas measures correctly
+    document.fonts.ready.then(() => {
+      if (container.isConnected) {
+        initTerminal()
+      }
+    })
 
     return () => {
-      inputDisposable.dispose()
-      observer.disconnect()
-      term.dispose()
-      xtermRef.current = null
-      fitAddonRef.current = null
+      cleanupRef.current()
     }
   }, [handleResize])
 

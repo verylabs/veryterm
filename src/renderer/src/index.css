@@ -1,48 +1,6 @@
 @import "tailwindcss";
 
-/* Monaspace Neon — bundled font */
-@font-face {
-  font-family: 'Monaspace Neon';
-  src: url('./assets/fonts/MonaspaceNeon-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Monaspace Neon';
-  src: url('./assets/fonts/MonaspaceNeon-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Monaspace Neon';
-  src: url('./assets/fonts/MonaspaceNeon-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* D2Coding — Korean coding font (bundled) */
-@font-face {
-  font-family: 'D2Coding';
-  src: url('./assets/fonts/D2Coding.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'D2Coding';
-  src: url('./assets/fonts/D2CodingBold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* NanumGothicCoding — Korean coding font (bundled) */
+/* NanumGothicCoding — coding font (bundled) */
 @font-face {
   font-family: 'NanumGothicCoding';
   src: url('./assets/fonts/NanumGothicCoding.woff2') format('woff2');
