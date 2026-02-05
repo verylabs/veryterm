@@ -195,7 +195,7 @@ export default function Sidebar() {
         <button
           onClick={(e) => handleSettings(e, project)}
           className="w-8 h-8 flex items-center justify-center rounded-md text-fg-subtle hover:text-fg-default hover:bg-bg-subtle/80 text-[20px] transition-colors"
-          title="설정"
+          title="Settings"
         >
           ⚙
         </button>
@@ -214,7 +214,7 @@ export default function Sidebar() {
           <button
             onClick={toggleSidebar}
             className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-bg-subtle text-fg-subtle hover:text-fg-muted transition-colors text-xs"
-            title="사이드바 펼치기 (⌘B)"
+            title="Expand sidebar (⌘B)"
           >
             ▶
           </button>
@@ -271,7 +271,7 @@ export default function Sidebar() {
             <button
               onClick={handleAddProject}
               className="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-subtle text-fg-subtle hover:text-fg-default transition-colors text-sm"
-              title="프로젝트 추가 (⌘N)"
+              title="Add project (⌘N)"
             >
               +
             </button>
@@ -279,7 +279,7 @@ export default function Sidebar() {
           <button
             onClick={toggleSidebar}
             className="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-subtle text-fg-subtle hover:text-fg-muted transition-colors text-[10px]"
-            title="사이드바 접기 (⌘B)"
+            title="Collapse sidebar (⌘B)"
           >
             ◀
           </button>
@@ -288,7 +288,7 @@ export default function Sidebar() {
         {/* Drop zone hint for folder drag */}
         {folderDragOver && (
           <div className="px-4 py-3 text-center text-[12px] text-accent-fg bg-accent-emphasis/10 border-b border-accent-fg/20">
-            폴더를 여기에 놓으세요
+            Drop folder here
           </div>
         )}
 
@@ -296,7 +296,7 @@ export default function Sidebar() {
         <div className="flex-1 overflow-y-auto py-1">
           {projects.length === 0 && categories.length === 0 && (
             <div className="px-4 py-10 text-center text-fg-subtle text-[12px] leading-relaxed">
-              프로젝트를 추가하거나<br />폴더를 드래그하세요
+              Add a project or<br />drag a folder here
             </div>
           )}
 
@@ -371,7 +371,7 @@ export default function Sidebar() {
                   <button
                     onClick={(e) => handleRemoveCategory(e, cat.id)}
                     className="w-5 h-5 flex items-center justify-center rounded text-fg-subtle hover:text-danger-fg hover:bg-danger-subtle/30 transition-colors text-[11px] opacity-0 group-hover/cat:opacity-100"
-                    title="카테고리 삭제"
+                    title="Delete category"
                   >
                     ✕
                   </button>
@@ -395,7 +395,7 @@ export default function Sidebar() {
                     })}
                     {catProjects.length === 0 && !isDropTarget && (
                       <div className="px-4 py-2 text-[11px] text-fg-subtle italic">
-                        프로젝트를 드래그하세요
+                        Drag projects here
                       </div>
                     )}
                   </div>
@@ -434,7 +434,7 @@ export default function Sidebar() {
                     setNewCategoryName('')
                   }
                 }}
-                placeholder="카테고리 이름"
+                placeholder="Category name"
                 className="flex-1 min-w-0 text-[12px] font-semibold bg-bg-subtle border border-border-muted rounded px-1 py-0.5 text-fg-default outline-none focus:border-accent-fg placeholder:text-fg-subtle/50"
                 autoFocus
               />
@@ -447,7 +447,7 @@ export default function Sidebar() {
             className="flex items-center gap-1 px-3 py-1.5 mx-1 mt-1 rounded-md text-[11px] text-fg-subtle hover:text-fg-muted hover:bg-bg-subtle/40 transition-colors w-[calc(100%-8px)]"
           >
             <span className="text-sm">+</span>
-            <span>카테고리 추가</span>
+            <span>Add Category</span>
           </button>
         </div>
 

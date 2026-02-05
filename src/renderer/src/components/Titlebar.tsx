@@ -47,22 +47,29 @@ export default function Titlebar() {
 
   return (
     <div className="titlebar-drag h-[38px] bg-bg-inset border-b border-border-default flex items-center shrink-0">
-      {/* macOS 트래픽 라이트 공간 */}
+      {/* macOS traffic lights */}
       <div className="w-[78px] shrink-0" />
 
-      {/* 프로젝트 이름 */}
+      {/* Project name */}
       <span className="titlebar-no-drag text-[13px] font-semibold text-fg-muted">
         {activeProject?.name || 'No Project'}
       </span>
 
-      {/* 프로젝트 타입 */}
+      {/* Path */}
+      {activeProject && (
+        <span className="titlebar-no-drag text-[11px] text-fg-subtle ml-2 truncate max-w-[400px]">
+          {activeProject.path}
+        </span>
+      )}
+
+      {/* Project type */}
       {activeProject?.projectType && (
         <span className="titlebar-no-drag text-[11px] text-fg-muted ml-3 px-1.5 py-0.5 rounded bg-bg-subtle">
           {activeProject.projectType}
         </span>
       )}
 
-      {/* 서버 상태 */}
+      {/* Server status */}
       {activeProject && serverRunning && (
         <span className="titlebar-no-drag flex items-center gap-1.5 ml-3 text-[11px] text-success-fg">
           <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />
@@ -72,8 +79,8 @@ export default function Titlebar() {
 
       <div className="flex-1" />
 
-      {/* 레이아웃 전환 버튼 */}
-      <div className="titlebar-no-drag flex items-center gap-1 mr-3">
+      {/* Layout switch buttons */}
+      <div className="titlebar-no-drag flex items-center gap-1 mr-4">
         {layouts.map((mode) => (
           <button
             key={mode}
@@ -85,13 +92,6 @@ export default function Titlebar() {
           </button>
         ))}
       </div>
-
-      {/* 경로 */}
-      {activeProject && (
-        <span className="titlebar-no-drag text-[11px] text-fg-muted truncate max-w-[400px] mr-4">
-          {activeProject.path}
-        </span>
-      )}
     </div>
   )
 }

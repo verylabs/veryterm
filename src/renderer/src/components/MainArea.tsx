@@ -33,20 +33,20 @@ export default function MainArea() {
         <div className="text-center">
           <div className="text-[22px] font-bold text-fg-subtle mb-2">VTerm</div>
           <div className="text-[13px] text-fg-subtle mb-6">
-            좌측에서 프로젝트를 선택하거나 추가하세요
+            Select or add a project from the sidebar
           </div>
           <div className="text-[12px] text-fg-subtle space-y-1.5 font-mono">
             <div className="flex items-center justify-center gap-3">
               <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘N</kbd>
-              <span>프로젝트 추가</span>
+              <span>Add Project</span>
             </div>
             <div className="flex items-center justify-center gap-3">
               <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘1-9</kbd>
-              <span>프로젝트 전환</span>
+              <span>Switch Project</span>
             </div>
             <div className="flex items-center justify-center gap-3">
               <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘`</kbd>
-              <span>패널 전환</span>
+              <span>Switch Panel</span>
             </div>
           </div>
         </div>

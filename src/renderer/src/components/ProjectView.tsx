@@ -60,7 +60,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     const cleanup = window.api.terminal.onExit((sid, _code) => {
       if (sid === serverSessionId) {
         setServerRunning(project.id, false)
-        window.api.notify('VTerm', `서버가 종료되었습니다 (${project.name})`)
+        window.api.notify('VTerm', `Server stopped (${project.name})`)
       }
     })
     return cleanup

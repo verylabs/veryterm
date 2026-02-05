@@ -8,14 +8,14 @@ interface ProjectSettingsModalProps {
 }
 
 const COLOR_OPTIONS = [
-  { value: undefined, label: '없음', className: 'bg-fg-subtle' },
-  { value: '#f85149', label: '빨강', className: 'bg-[#f85149]' },
-  { value: '#d29922', label: '주황', className: 'bg-[#d29922]' },
-  { value: '#e3b341', label: '노랑', className: 'bg-[#e3b341]' },
-  { value: '#3fb950', label: '초록', className: 'bg-[#3fb950]' },
-  { value: '#58a6ff', label: '파랑', className: 'bg-[#58a6ff]' },
-  { value: '#bc8cff', label: '보라', className: 'bg-[#bc8cff]' },
-  { value: '#f778ba', label: '분홍', className: 'bg-[#f778ba]' }
+  { value: undefined, label: 'None', className: 'bg-fg-subtle' },
+  { value: '#f85149', label: 'Red', className: 'bg-[#f85149]' },
+  { value: '#d29922', label: 'Orange', className: 'bg-[#d29922]' },
+  { value: '#e3b341', label: 'Yellow', className: 'bg-[#e3b341]' },
+  { value: '#3fb950', label: 'Green', className: 'bg-[#3fb950]' },
+  { value: '#58a6ff', label: 'Blue', className: 'bg-[#58a6ff]' },
+  { value: '#bc8cff', label: 'Purple', className: 'bg-[#bc8cff]' },
+  { value: '#f778ba', label: 'Pink', className: 'bg-[#f778ba]' }
 ]
 
 const ICON_OPTIONS = [
@@ -79,7 +79,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-muted">
-          <h2 className="text-sm font-medium text-fg-default">프로젝트 설정</h2>
+          <h2 className="text-sm font-medium text-fg-default">Project Settings</h2>
           <button
             onClick={onClose}
             className="text-fg-subtle hover:text-fg-muted transition-colors"
@@ -92,7 +92,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
         <div className="px-5 py-4 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs text-fg-subtle mb-1.5">프로젝트 이름</label>
+            <label className="block text-xs text-fg-subtle mb-1.5">Project Name</label>
             <input
               type="text"
               value={name}
@@ -103,7 +103,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
 
           {/* CLI Command */}
           <div>
-            <label className="block text-xs text-fg-subtle mb-1.5">CLI 명령어</label>
+            <label className="block text-xs text-fg-subtle mb-1.5">CLI Command</label>
             <input
               type="text"
               value={cliCommand}
@@ -115,7 +115,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
 
           {/* Server Command */}
           <div>
-            <label className="block text-xs text-fg-subtle mb-1.5">서버 실행 명령어</label>
+            <label className="block text-xs text-fg-subtle mb-1.5">Server Command</label>
             <input
               type="text"
               value={serverCommand}
@@ -127,30 +127,30 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
 
           {/* Icon */}
           <div>
-            <label className="block text-xs text-fg-subtle mb-1.5">아이콘</label>
-            <div className="flex items-start gap-3 mb-2">
+            <label className="block text-xs text-fg-subtle mb-1.5">Icon</label>
+            <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 rounded-xl bg-bg-inset border border-border-default flex items-center justify-center text-2xl overflow-hidden shrink-0">
                 {icon.startsWith('data:') ? (
                   <img src={icon} alt="icon" className="w-full h-full object-cover" />
                 ) : icon ? (
                   icon
                 ) : (
-                  <span className="text-fg-subtle text-xs">없음</span>
+                  <span className="text-fg-subtle text-xs">None</span>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="px-3 py-1.5 text-xs bg-bg-inset border border-border-default rounded-lg text-fg-default hover:bg-bg-subtle transition-colors"
                 >
-                  이미지 업로드
+                  Upload Image
                 </button>
                 {icon && (
                   <button
                     onClick={() => setIcon('')}
                     className="px-3 py-1.5 text-xs text-fg-subtle hover:text-danger-fg transition-colors"
                   >
-                    제거
+                    Remove
                   </button>
                 )}
               </div>
@@ -173,7 +173,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
                       : 'hover:bg-bg-subtle'
                   }`}
                 >
-                  {ic || <span className="text-[10px] text-fg-subtle">없음</span>}
+                  {ic || <span className="text-[10px] text-fg-subtle">None</span>}
                 </button>
               ))}
             </div>
@@ -181,7 +181,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
 
           {/* Color */}
           <div>
-            <label className="block text-xs text-fg-subtle mb-1.5">컬러 태그</label>
+            <label className="block text-xs text-fg-subtle mb-1.5">Color Tag</label>
             <div className="flex gap-2">
               {COLOR_OPTIONS.map((opt) => (
                 <button
@@ -198,7 +198,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
 
           {/* Auto Start CLI */}
           <div className="flex items-center justify-between">
-            <label className="text-xs text-fg-subtle">프로젝트 열 때 CLI 자동 시작</label>
+            <label className="text-xs text-fg-subtle">Auto-start CLI on project open</label>
             <button
               onClick={() => setAutoStartClaude(!autoStartClaude)}
               className={`w-9 h-5 rounded-full transition-colors relative ${
@@ -215,7 +215,7 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
 
           {/* Path (read-only) */}
           <div>
-            <label className="block text-xs text-fg-subtle mb-1.5">경로</label>
+            <label className="block text-xs text-fg-subtle mb-1.5">Path</label>
             <div className="px-3 py-2 text-xs bg-bg-inset/50 border border-border-muted rounded-lg text-fg-subtle font-mono truncate">
               {project.path}
             </div>
@@ -228,13 +228,13 @@ export default function ProjectSettingsModal({ project, onClose }: ProjectSettin
             onClick={onClose}
             className="px-4 py-1.5 text-xs text-fg-muted hover:text-fg-default rounded-lg hover:bg-bg-subtle transition-colors"
           >
-            취소
+            Cancel
           </button>
           <button
             onClick={handleSave}
             className="px-4 py-1.5 text-xs bg-accent-emphasis text-white rounded-lg hover:bg-accent-fg transition-colors"
           >
-            저장
+            Save
           </button>
         </div>
       </div>

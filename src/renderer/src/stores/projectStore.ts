@@ -35,12 +35,35 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       activeProjectId: string | null
     } | null
     if (data) {
+      // Re-detect project types for projects missing type info
+      const projects = await Promise.all(
+        data.projects.map(async (p) => {
+          if (!p.projectType) {
+            try {
+              const detected = await window.api.project.detectType(p.path)
+              if (detected.type) {
+                return {
+                  ...p,
+                  projectType: detected.type,
+                  serverCommand: p.serverCommand || detected.serverCommand || undefined
+                }
+              }
+            } catch { /* ignore detection failures */ }
+          }
+          return p
+        })
+      )
       set({
-        projects: data.projects,
+        projects,
         categories: data.categories || [],
         activeProjectId: data.activeProjectId,
         loaded: true
       })
+      // Save updated types
+      const state = get()
+      if (projects.some((p, i) => p.projectType !== data.projects[i]?.projectType)) {
+        state.saveProjects()
+      }
     } else {
       set({ loaded: true })
     }

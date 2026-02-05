@@ -56,7 +56,7 @@ export default function App() {
   if (!projectsLoaded || !promptsLoaded) {
     return (
       <div className="h-screen flex items-center justify-center bg-bg-canvas">
-        <div className="text-fg-subtle text-sm">로딩 중...</div>
+        <div className="text-fg-subtle text-sm">Loading...</div>
       </div>
     )
   }
