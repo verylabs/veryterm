@@ -49,30 +49,31 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     const term = new XTerm({
       theme: {
-        background: '#191d21',
-        foreground: '#e1e4e8',
-        cursor: '#c8e1ff',
-        cursorAccent: '#191d21',
-        selectionBackground: '#444d56',
-        black: '#1d2125',
-        red: '#f97583',
-        green: '#85e89d',
-        yellow: '#ffea7f',
-        blue: '#79b8ff',
-        magenta: '#b392f0',
-        cyan: '#73e3ff',
-        white: '#e1e4e8',
-        brightBlack: '#6a737d',
-        brightRed: '#fdaeb7',
-        brightGreen: '#bef5cb',
-        brightYellow: '#fff5b1',
-        brightBlue: '#c8e1ff',
-        brightMagenta: '#d1bcf9',
-        brightCyan: '#b3f0ff',
-        brightWhite: '#fafbfc'
+        background: '#292c33',
+        foreground: '#ffffff',
+        cursor: '#ffffff',
+        cursorAccent: '#363a43',
+        selectionBackground: '#ffffff',
+        selectionForeground: '#292c33',
+        black: '#1d1f21',
+        red: '#bf6b69',
+        green: '#b7bd73',
+        yellow: '#e9c880',
+        blue: '#88a1bb',
+        magenta: '#ad95b8',
+        cyan: '#95bdb7',
+        white: '#c5c8c6',
+        brightBlack: '#666666',
+        brightRed: '#c55757',
+        brightGreen: '#bcc95f',
+        brightYellow: '#e1c65e',
+        brightBlue: '#83a5d6',
+        brightMagenta: '#bc99d4',
+        brightCyan: '#83beb1',
+        brightWhite: '#eaeaea'
       },
       fontSize: 13,
-      fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+      fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, monospace",
       cursorBlink: true,
       allowProposedApi: true
     })
@@ -86,9 +87,9 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     // Force xterm viewport background to match theme
     const viewport = containerRef.current.querySelector('.xterm-viewport') as HTMLElement
-    if (viewport) viewport.style.backgroundColor = '#191d21'
+    if (viewport) viewport.style.backgroundColor = '#292c33'
     const screen = containerRef.current.querySelector('.xterm-screen') as HTMLElement
-    if (screen) screen.style.backgroundColor = '#191d21'
+    if (screen) screen.style.backgroundColor = '#292c33'
 
     xtermRef.current = term
     fitAddonRef.current = fitAddon
