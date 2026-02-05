@@ -73,9 +73,10 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
         brightWhite: '#eaeaea'
       },
       fontSize: 13,
-      lineHeight: 1.2,
+      lineHeight: 1.4,
       fontWeight: '400',
-      fontFamily: "'D2Coding', 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
+      letterSpacing: 1,
+      fontFamily: "'NanumGothicCoding', 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
       cursorBlink: true,
       allowProposedApi: true
     })
