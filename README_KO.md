@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="build/icon.png" alt="VeryTerm" width="128" />
+  <img src="build/icon-round.png" alt="VeryTerm" width="128" />
 </p>
 
 <h1 align="center">VeryTerm</h1>
