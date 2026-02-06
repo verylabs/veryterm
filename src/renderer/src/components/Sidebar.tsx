@@ -361,6 +361,7 @@ export default function Sidebar() {
         <div className="h-8 flex items-center justify-between px-3 border-b border-border-muted shrink-0">
           <div className="flex items-center gap-1">
             <span className="text-[12px] font-semibold text-fg-default">Projects</span>
+            <span className="text-[10px] text-fg-subtle font-normal">({projects.length})</span>
             <button
               onClick={handleAddProject}
               className="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-subtle text-fg-subtle hover:text-fg-default transition-colors text-sm"
