@@ -1,0 +1,4 @@
+#!/bin/bash
+# Launch VeryTerm after pkg installation
+open -a "/Applications/VeryTerm.app"
+exit 0

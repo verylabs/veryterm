@@ -10,9 +10,16 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 mac:
   target:
+    - pkg
     - dmg
-    - zip
   artifactName: ${name}-${version}-${arch}.${ext}
   entitlementsInherit: build/entitlements.mac.plist
+pkg:
+  installLocation: /Applications
+  allowCurrentUserHome: false
+  allowRootDirectory: false
+  isRelocatable: false
+  scripts: scripts
+  artifactName: ${name}-${version}.${ext}
 dmg:
   artifactName: ${name}-${version}.${ext}
