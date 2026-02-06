@@ -6,10 +6,20 @@ import { usePromptStore } from '../stores/promptStore'
 import { useUIStore } from '../stores/uiStore'
 import type { Project } from '../types'
 
+interface ServerTab {
+  id: string
+  sessionId: string | null
+  name: string
+  command: string
+  running: boolean
+}
+
 interface ProjectViewProps {
   project: Project
   active: boolean
 }
+
+let tabCounter = 0
 
 export default function ProjectView({ project, active }: ProjectViewProps) {
   const { addPrompt } = usePromptStore()
@@ -23,24 +33,33 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [mainSessionId, setMainSessionId] = useState<string | null>(null)
-  const [serverSessionId, setServerSessionId] = useState<string | null>(null)
+  const [serverTabs, setServerTabs] = useState<ServerTab[]>([])
+  const [activeServerTabId, setActiveServerTabId] = useState<string | null>(null)
+  const serverTabsRef = useRef<ServerTab[]>([])
   const inputBufferRef = useRef('')
-  const sessionsRef = useRef<{ main: string | null; server: string | null }>({
-    main: null,
-    server: null
-  })
+  const mainSessionRef = useRef<string | null>(null)
   const lastDataRef = useRef(0)
   const wasWorkingRef = useRef(false)
   const escapeRef = useRef(false)
+
+  // Keep ref in sync for cleanup
+  useEffect(() => {
+    serverTabsRef.current = serverTabs
+  }, [serverTabs])
 
   // Create sessions on mount, kill on unmount
   useEffect(() => {
     const setup = async () => {
       const mainSid = await window.api.terminal.create(project.id, 'main', project.path)
-      const serverSid = await window.api.terminal.create(project.id, 'server', project.path)
-      sessionsRef.current = { main: mainSid, server: serverSid }
+      mainSessionRef.current = mainSid
       setMainSessionId(mainSid)
-      setServerSessionId(serverSid)
+
+      // Create initial server tab
+      const serverSid = await window.api.terminal.create(project.id, 'server', project.path)
+      const tabId = `srv-${++tabCounter}`
+      const initialTab: ServerTab = { id: tabId, sessionId: serverSid, name: 'Server 1', command: project.serverCommand || '', running: false }
+      setServerTabs([initialTab])
+      setActiveServerTabId(tabId)
 
       // Auto start CLI
       if (project.autoStartClaude && mainSid) {
@@ -52,23 +71,34 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     }
     setup()
     return () => {
-      if (sessionsRef.current.main) window.api.terminal.kill(sessionsRef.current.main)
-      if (sessionsRef.current.server) window.api.terminal.kill(sessionsRef.current.server)
-      sessionsRef.current = { main: null, server: null }
+      if (mainSessionRef.current) window.api.terminal.kill(mainSessionRef.current)
+      mainSessionRef.current = null
+      for (const tab of serverTabsRef.current) {
+        if (tab.sessionId) window.api.terminal.kill(tab.sessionId)
+      }
+      setServerTabs([])
+      setActiveServerTabId(null)
     }
   }, [project.id, project.path])
 
-  // Server exit handler
+  // Server exit handler — watch all server tab sessions
   useEffect(() => {
-    if (!serverSessionId) return
     const cleanup = window.api.terminal.onExit((sid, _code) => {
-      if (sid === serverSessionId) {
-        setServerRunning(project.id, false)
-        window.api.notify('VeryTerm', `Server stopped (${project.name})`)
-      }
+      setServerTabs((prev) => {
+        const idx = prev.findIndex((t) => t.sessionId === sid)
+        if (idx === -1) return prev
+        const updated = prev.map((t) =>
+          t.sessionId === sid ? { ...t, running: false } : t
+        )
+        // Sync sidebar green dot
+        const anyRunning = updated.some((t) => t.running)
+        setServerRunning(project.id, anyRunning)
+        window.api.notify('VeryTerm', `Server stopped (${project.name} - ${prev[idx].name})`)
+        return updated
+      })
     })
     return cleanup
-  }, [serverSessionId, project.id, project.name, setServerRunning])
+  }, [project.id, project.name, setServerRunning])
 
   // CLI activity tracking: listen to terminal:data for the main session
   useEffect(() => {
@@ -131,10 +161,91 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
 
   const handleServerInput = useCallback(
     (data: string) => {
-      if (data === '\r' || data === '\n') setServerRunning(project.id, true)
+      if (data === '\r' || data === '\n') {
+        const tabId = activeServerTabId
+        if (!tabId) return
+        setServerTabs((prev) =>
+          prev.map((t) => (t.id === tabId ? { ...t, running: true } : t))
+        )
+        setServerRunning(project.id, true)
+      }
     },
-    [project.id, setServerRunning]
+    [project.id, activeServerTabId, setServerRunning]
   )
+
+  // Sync serverRunning from tabs
+  useEffect(() => {
+    const anyRunning = serverTabs.some((t) => t.running)
+    setServerRunning(project.id, anyRunning)
+  }, [serverTabs, project.id, setServerRunning])
+
+  // Trigger resize when active tab changes so xterm FitAddon recalculates
+  useEffect(() => {
+    if (!activeServerTabId) return
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+  }, [activeServerTabId])
+
+  const addServerTab = useCallback(async () => {
+    const sid = await window.api.terminal.create(project.id, 'server', project.path)
+    const tabId = `srv-${++tabCounter}`
+    const tabNum = serverTabsRef.current.length + 1
+    const newTab: ServerTab = { id: tabId, sessionId: sid, name: `Server ${tabNum}`, command: project.serverCommand || '', running: false }
+    setServerTabs((prev) => [...prev, newTab])
+    setActiveServerTabId(tabId)
+  }, [project.id, project.path])
+
+  const [closeConfirmTabId, setCloseConfirmTabId] = useState<string | null>(null)
+
+  const requestCloseServerTab = useCallback(
+    (tabId: string) => setCloseConfirmTabId(tabId),
+    []
+  )
+
+  const confirmCloseServerTab = useCallback(() => {
+    const tabId = closeConfirmTabId
+    if (!tabId) return
+    setCloseConfirmTabId(null)
+    setServerTabs((prev) => {
+      if (prev.length <= 1) return prev
+      const target = prev.find((t) => t.id === tabId)
+      if (target?.sessionId) window.api.terminal.kill(target.sessionId)
+      const remaining = prev.filter((t) => t.id !== tabId)
+      setActiveServerTabId((currentActive) =>
+        currentActive === tabId ? remaining[0].id : currentActive
+      )
+      return remaining
+    })
+  }, [closeConfirmTabId])
+
+  const cancelCloseServerTab = useCallback(() => setCloseConfirmTabId(null), [])
+
+  const [settingsTabId, setSettingsTabId] = useState<string | null>(null)
+  const [settingsName, setSettingsName] = useState('')
+  const [settingsCommand, setSettingsCommand] = useState('')
+
+  const openTabSettings = useCallback((tabId: string) => {
+    const tab = serverTabsRef.current.find((t) => t.id === tabId)
+    if (!tab) return
+    setSettingsName(tab.name)
+    setSettingsCommand(tab.command)
+    setSettingsTabId(tabId)
+  }, [])
+
+  const saveTabSettings = useCallback(() => {
+    if (!settingsTabId) return
+    const name = settingsName.trim()
+    if (!name) return
+    setServerTabs((prev) =>
+      prev.map((t) =>
+        t.id === settingsTabId ? { ...t, name, command: settingsCommand.trim() } : t
+      )
+    )
+    setSettingsTabId(null)
+  }, [settingsTabId, settingsName, settingsCommand])
+
+  const cancelTabSettings = useCallback(() => setSettingsTabId(null), [])
 
   const handleSelectPrompt = useCallback(
     (prompt: string) => {
@@ -251,28 +362,52 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     </div>
   )
 
+  const activeTab = serverTabs.find((t) => t.id === activeServerTabId) ?? null
+  const activeTabRunning = activeTab?.running ?? false
+
   const renderServer = (style?: React.CSSProperties) => (
     <div
       className={`min-h-0 flex flex-col ${focusedPanel === 'server' ? focusRing : ''}`}
       style={style}
       onClick={() => setFocusedPanel('server')}
     >
+      {/* Header — SERVER : tab name + settings + command + RUN/STOP + close */}
       <div className={panelHeaderClass} style={panelHeaderStyle}>
         <div className="flex items-center gap-2">
           <span>Server</span>
-          {serverRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
-        </div>
-        <div className="flex items-center gap-1.5">
-          {project.serverCommand && (
-            <span className="text-fg-subtle font-mono normal-case text-[10px]">{project.serverCommand}</span>
+          {activeTab && (
+            <>
+              <span className="text-fg-subtle">:</span>
+              <span className="normal-case text-[11px] text-fg-default">{activeTab.name}</span>
+            </>
           )}
-          {serverRunning ? (
+          {activeTabRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
+          {activeTab && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                if (serverSessionId) {
-                  window.api.terminal.write(serverSessionId, '\x03')
-                  setServerRunning(project.id, false)
+                openTabSettings(activeTab.id)
+              }}
+              className="w-5 h-5 flex items-center justify-center rounded text-fg-muted hover:text-fg-default hover:bg-bg-subtle/80 text-[14px] leading-none transition-colors"
+              title="Tab settings"
+            >
+              ⚙
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {activeTab?.command && (
+            <span className="text-fg-subtle font-mono normal-case text-[10px]">{activeTab.command}</span>
+          )}
+          {activeTabRunning ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (activeTab?.sessionId) {
+                  window.api.terminal.write(activeTab.sessionId, '\x03')
+                  setServerTabs((prev) =>
+                    prev.map((t) => (t.id === activeTab.id ? { ...t, running: false } : t))
+                  )
                 }
               }}
               className="px-2 py-0.5 text-[10px] font-semibold rounded bg-danger-fg/80 text-white hover:bg-danger-fg transition-colors normal-case tracking-normal"
@@ -283,9 +418,11 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                if (serverSessionId && project.serverCommand) {
-                  window.api.terminal.write(serverSessionId, project.serverCommand + '\n')
-                  setServerRunning(project.id, true)
+                if (activeTab?.sessionId && activeTab.command) {
+                  window.api.terminal.write(activeTab.sessionId, activeTab.command + '\n')
+                  setServerTabs((prev) =>
+                    prev.map((t) => (t.id === activeTab.id ? { ...t, running: true } : t))
+                  )
                 }
               }}
               className="px-2 py-0.5 text-[10px] font-semibold rounded bg-success-fg/80 text-white hover:bg-success-fg transition-colors normal-case tracking-normal"
@@ -293,10 +430,153 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
               RUN
             </button>
           )}
+          {serverTabs.length > 1 && activeTab && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                requestCloseServerTab(activeTab.id)
+              }}
+              className="w-5 h-5 flex items-center justify-center rounded text-fg-subtle hover:bg-danger-fg/20 hover:text-danger-fg transition-colors"
+              title={`Close ${activeTab.name}`}
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
-      <div className="flex-1 min-h-0">
-        <Terminal sessionId={serverSessionId} onInput={handleServerInput} onTab={handleTabFromServer} focused={active && focusedPanel === 'server'} />
+
+      {/* Terminal area — all tabs rendered, inactive ones hidden for state preservation */}
+      <div className="flex-1 min-h-0 relative">
+        {serverTabs.map((tab) => (
+          <div
+            key={tab.id}
+            className={`absolute inset-0 ${tab.id === activeServerTabId ? '' : 'hidden'}`}
+          >
+            <Terminal
+              sessionId={tab.sessionId}
+              onInput={handleServerInput}
+              onTab={handleTabFromServer}
+              focused={active && focusedPanel === 'server' && tab.id === activeServerTabId}
+            />
+          </div>
+        ))}
+
+        {/* Close confirm dialog — centered overlay */}
+        {closeConfirmTabId && (() => {
+          const tab = serverTabs.find((t) => t.id === closeConfirmTabId)
+          if (!tab) return null
+          return (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+              <div className="bg-bg-default border border-border-muted rounded-lg px-5 py-4 shadow-lg flex flex-col items-center gap-3 max-w-[260px]">
+                <p className="text-xs text-fg-default text-center leading-relaxed">
+                  {tab.running
+                    ? <><span className="font-semibold text-danger-fg">{tab.name}</span> is running.<br/>Close anyway?</>
+                    : <>Close <span className="font-semibold">{tab.name}</span>?</>
+                  }
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); cancelCloseServerTab() }}
+                    className="px-3 py-1 text-[11px] rounded bg-bg-subtle text-fg-default hover:bg-border-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); confirmCloseServerTab() }}
+                    className="px-3 py-1 text-[11px] rounded bg-danger-fg/90 text-white hover:bg-danger-fg transition-colors font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Tab settings dialog — centered overlay */}
+        {settingsTabId && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+            <div
+              className="bg-bg-default border border-border-muted rounded-lg px-5 py-4 shadow-lg flex flex-col gap-3 w-[280px]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-xs font-semibold text-fg-default">Tab Settings</p>
+              <div className="flex flex-col gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] text-fg-subtle uppercase tracking-wider">Name</span>
+                  <input
+                    type="text"
+                    value={settingsName}
+                    onChange={(e) => setSettingsName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') saveTabSettings(); if (e.key === 'Escape') cancelTabSettings() }}
+                    className="px-2 py-1 text-xs bg-bg-subtle border border-border-muted rounded text-fg-default outline-none focus:border-accent-fg"
+                    autoFocus
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] text-fg-subtle uppercase tracking-wider">Command</span>
+                  <input
+                    type="text"
+                    value={settingsCommand}
+                    onChange={(e) => setSettingsCommand(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') saveTabSettings(); if (e.key === 'Escape') cancelTabSettings() }}
+                    placeholder="e.g. npm run dev"
+                    className="px-2 py-1 text-xs font-mono bg-bg-subtle border border-border-muted rounded text-fg-default outline-none focus:border-accent-fg"
+                  />
+                </label>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={cancelTabSettings}
+                  className="px-3 py-1 text-[11px] rounded bg-bg-subtle text-fg-default hover:bg-border-muted transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveTabSettings}
+                  className="px-3 py-1 text-[11px] rounded bg-accent-emphasis/90 text-white hover:bg-accent-emphasis transition-colors font-semibold"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tab bar — bottom */}
+      <div className="flex items-center h-7 min-h-[28px] max-h-[28px] border-t border-border-muted bg-[#111114] px-1 gap-0.5 overflow-x-auto">
+        {serverTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              setActiveServerTabId(tab.id)
+            }}
+            className={`flex items-center gap-1 px-2 h-5 text-[10px] rounded transition-colors shrink-0 ${
+              tab.id === activeServerTabId
+                ? 'bg-[#9C86FF]/10 text-[#9C86FF] font-semibold'
+                : 'text-fg-subtle hover:bg-bg-subtle'
+            }`}
+          >
+            {tab.running && (
+              <span className="w-1.5 h-1.5 rounded-full bg-success-fg shrink-0" />
+            )}
+            <span>{tab.name}</span>
+          </button>
+        ))}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            addServerTab()
+          }}
+          className="flex items-center justify-center w-5 h-5 text-[11px] text-fg-subtle hover:bg-bg-subtle rounded shrink-0"
+          title="Add server tab"
+        >
+          +
+        </button>
       </div>
     </div>
   )
