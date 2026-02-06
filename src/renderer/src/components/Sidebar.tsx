@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useProjectStore } from '../stores/projectStore'
+import { usePromptStore } from '../stores/promptStore'
 import { useUIStore } from '../stores/uiStore'
 import ProjectSettingsModal from './ProjectSettingsModal'
 import type { Project, Category } from '../types'
@@ -17,6 +18,8 @@ export default function Sidebar() {
   const cliWorking = useUIStore((s) => s.cliWorking)
 
   const [settingsProject, setSettingsProject] = useState<Project | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; project: Project } | null>(null)
+  const [deleteConfirmProject, setDeleteConfirmProject] = useState<Project | null>(null)
   const [folderDragOver, setFolderDragOver] = useState(false)
   const [dropTargetId, setDropTargetId] = useState<string | null | undefined>(undefined)
   const [dropIndicator, setDropIndicator] = useState<{ projectId: string; position: 'before' | 'after' } | null>(null)
@@ -38,6 +41,8 @@ export default function Sidebar() {
     }
   }, [addProject])
 
+  const { removeProjectPrompts } = usePromptStore()
+
   const handleRemove = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     removeProject(id)
@@ -47,6 +52,30 @@ export default function Sidebar() {
     e.stopPropagation()
     setSettingsProject(project)
   }
+
+  const handleContextMenu = (e: React.MouseEvent, project: Project) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({ x: e.clientX, y: e.clientY, project })
+  }
+
+  const handleDuplicate = (project: Project) => {
+    addProject(project.path)
+    setContextMenu(null)
+  }
+
+  const handleRemoveFromList = (project: Project) => {
+    setDeleteConfirmProject(project)
+    setContextMenu(null)
+  }
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return
+    const close = () => setContextMenu(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [contextMenu])
 
   // Folder drag-drop (add project from Finder)
   const handleFolderDragOver = useCallback((e: React.DragEvent) => {
@@ -205,6 +234,7 @@ export default function Sidebar() {
       draggable
       onDragStart={(e) => handleProjectDragStart(e, project.id)}
       onClick={() => setActiveProject(project.id)}
+      onContextMenu={(e) => handleContextMenu(e, project)}
       className={`group flex items-center gap-2.5 pl-3 pr-0.5 py-2 mx-1 rounded-md cursor-pointer transition-colors ${
         activeProjectId === project.id
           ? 'bg-bg-subtle text-fg-default'
@@ -521,9 +551,18 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="h-8 border-t border-border-muted px-3 flex items-center shrink-0">
-          <div className="flex items-center justify-between w-full text-fg-subtle font-mono">
-            <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">1-9</span></span>
-            <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">B</span></span>
+          <div className="flex items-center justify-between w-full text-fg-subtle">
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); window.api.shell.openExternal('https://www.verylabs.io') }}
+              className="text-[10px] text-fg-subtle hover:text-fg-muted transition-colors cursor-pointer"
+            >
+              Powered by VeryLabs
+            </a>
+            <div className="flex items-center gap-2 font-mono">
+              <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">1-9</span></span>
+              <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">B</span></span>
+            </div>
           </div>
         </div>
       </div>
@@ -533,6 +572,72 @@ export default function Sidebar() {
           project={settingsProject}
           onClose={() => setSettingsProject(null)}
         />
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-bg-overlay border border-border-default rounded-lg shadow-2xl py-1 min-w-[160px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => handleDuplicate(contextMenu.project)}
+            className="w-full px-3 py-1.5 text-left text-xs text-fg-default hover:bg-bg-subtle transition-colors"
+          >
+            Duplicate
+          </button>
+          <div className="my-1 border-t border-border-muted" />
+          <button
+            onClick={() => handleRemoveFromList(contextMenu.project)}
+            className="w-full px-3 py-1.5 text-left text-xs text-danger-fg hover:bg-danger-subtle/20 transition-colors"
+          >
+            Remove from List
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmProject && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onMouseDown={() => setDeleteConfirmProject(null)}
+        >
+          <div
+            className="bg-bg-overlay border border-border-default rounded-xl w-[360px] shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-border-muted">
+              <h3 className="text-sm font-medium text-fg-default">Remove Project</h3>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-xs text-fg-muted leading-relaxed">
+                The actual folder will not be deleted. Only the project will be removed from VTerm.
+              </p>
+              <p className="text-xs text-danger-fg leading-relaxed">
+                All saved prompts for this project will be permanently deleted.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-border-muted">
+              <button
+                onClick={() => setDeleteConfirmProject(null)}
+                className="px-4 py-1.5 text-xs text-fg-muted hover:text-fg-default rounded-lg hover:bg-bg-subtle transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removeProjectPrompts(deleteConfirmProject.id)
+                  removeProject(deleteConfirmProject.id)
+                  setDeleteConfirmProject(null)
+                }}
+                className="px-4 py-1.5 text-xs bg-danger-emphasis text-white rounded-lg hover:bg-danger-fg transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

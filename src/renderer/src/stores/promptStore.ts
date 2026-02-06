@@ -11,6 +11,7 @@ interface PromptState {
   addPrompt: (projectId: string, prompt: string) => void
   removePrompt: (id: string) => void
   clearPrompts: (projectId: string) => void
+  removeProjectPrompts: (projectId: string) => void
   togglePin: (id: string) => void
   getProjectPrompts: (projectId: string) => PromptHistory[]
 }
@@ -60,6 +61,13 @@ export const usePromptStore = create<PromptState>((set, get) => ({
   clearPrompts: (projectId: string) => {
     set((state) => ({
       prompts: state.prompts.filter((p) => p.projectId !== projectId || p.pinned)
+    }))
+    get().savePrompts()
+  },
+
+  removeProjectPrompts: (projectId: string) => {
+    set((state) => ({
+      prompts: state.prompts.filter((p) => p.projectId !== projectId)
     }))
     get().savePrompts()
   },

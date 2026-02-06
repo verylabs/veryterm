@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, Notification } from 'electron'
+import electron from 'electron'
 import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
@@ -288,6 +289,10 @@ ipcMain.on('dock:bounce', () => {
     count++
     if (count >= 3) clearInterval(interval)
   }, 1000)
+})
+
+ipcMain.on('shell:openExternal', (_event, url: string) => {
+  electron.shell.openExternal(url)
 })
 
 // --- App Lifecycle ---

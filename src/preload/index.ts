@@ -60,6 +60,11 @@ const api = {
   // Dock
   dock: {
     bounce: (): void => ipcRenderer.send('dock:bounce')
+  },
+
+  // Shell
+  shell: {
+    openExternal: (url: string): void => ipcRenderer.send('shell:openExternal', url)
   }
 }
 
