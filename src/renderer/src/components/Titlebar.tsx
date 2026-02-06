@@ -64,13 +64,6 @@ export default function Titlebar() {
         </span>
       )}
 
-      {/* Project type */}
-      {activeProject?.projectType && (
-        <span className="titlebar-no-drag text-[11px] text-fg-muted ml-3 px-1.5 py-0.5 rounded bg-bg-subtle">
-          {activeProject.projectType}
-        </span>
-      )}
-
       {/* Server status */}
       {activeProject && serverRunning && (
         <span className="titlebar-no-drag flex items-center gap-1.5 ml-3 text-[11px] text-success-fg">
