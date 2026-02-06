@@ -54,7 +54,7 @@ ipcMain.handle('terminal:create', (_event, projectId: string, type: 'main' | 'se
     cols,
     rows,
     cwd,
-    env: { ...process.env } as Record<string, string>
+    env: { ...process.env, PROMPT_EOL_MARK: '' } as Record<string, string>
   })
 
   const session: PtySession = {

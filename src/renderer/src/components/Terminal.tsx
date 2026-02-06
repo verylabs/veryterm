@@ -35,17 +35,19 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
           (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 5)
         const scrollTop = viewport?.scrollTop ?? 0
         fitAddonRef.current.fit()
+        // Restore scroll after fit() — must retry because xterm's internal
+        // resize handler can reset scrollTop after our restore
         if (viewport) {
-          if (isAtBottom) {
-            // Was at bottom → stay at bottom (follow output)
-            viewport.scrollTop = viewport.scrollHeight
-          } else {
-            // Was scrolled up → preserve reading position
-            viewport.scrollTop = scrollTop
-            requestAnimationFrame(() => {
+          const restore = () => {
+            if (isAtBottom) {
+              viewport.scrollTop = viewport.scrollHeight
+            } else {
               viewport.scrollTop = scrollTop
-            })
+            }
           }
+          restore()
+          requestAnimationFrame(restore)
+          setTimeout(restore, 50)
         }
         if (sessionIdRef.current) {
           window.api.terminal.resize(
