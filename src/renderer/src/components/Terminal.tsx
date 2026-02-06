@@ -122,12 +122,7 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
       }
     }
 
-    // Wait for fonts to load before initializing xterm so canvas measures correctly
-    document.fonts.ready.then(() => {
-      if (container.isConnected) {
-        initTerminal()
-      }
-    })
+    initTerminal()
 
     return () => {
       cleanupRef.current()
