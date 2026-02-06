@@ -237,7 +237,7 @@ export default function Sidebar() {
       onContextMenu={(e) => handleContextMenu(e, project)}
       className={`group flex items-center gap-2.5 pl-3 pr-0.5 py-2 mx-1 rounded-md cursor-pointer transition-colors ${
         activeProjectId === project.id
-          ? 'bg-bg-subtle text-fg-default'
+          ? 'bg-[#9C86FF]/10 text-fg-default border-l-2 border-[#9C86FF] !pl-[10px]'
           : 'text-fg-default hover:bg-bg-subtle/60 hover:text-fg-default'
       }`}
     >
@@ -312,24 +312,24 @@ export default function Sidebar() {
               onClick={() => setActiveProject(project.id)}
               className={`w-full h-11 flex items-center justify-center transition-colors ${
                 activeProjectId === project.id
-                  ? 'bg-bg-subtle text-fg-default'
+                  ? 'text-fg-default'
                   : 'text-fg-subtle hover:bg-bg-subtle/50 hover:text-fg-muted'
               }`}
               title={`${project.name} (⌘${idx + 1})`}
             >
               <div className="relative">
                 {project.icon?.startsWith('data:') ? (
-                  <img src={project.icon} alt="" className="w-7 h-7 rounded-lg object-cover" />
+                  <img src={project.icon} alt="" className={`w-7 h-7 rounded-lg object-cover ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`} />
                 ) : project.icon ? (
                   <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`}
                     style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
                   >
                     {project.icon}
                   </div>
                 ) : (
                   <div
-                    className={`w-2.5 h-2.5 rounded-full ${getStatusClass(project)}`}
+                    className={`w-2.5 h-2.5 rounded-full ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF] ring-offset-2 ring-offset-bg-default' : ''} ${getStatusClass(project)}`}
                     style={getStatusStyle(project)}
                   />
                 )}

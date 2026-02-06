@@ -53,7 +53,7 @@ export default function Titlebar() {
       <div className="w-[78px] shrink-0" />
 
       {/* Project name */}
-      <span className="titlebar-no-drag text-[13px] font-semibold text-fg-muted">
+      <span className={`titlebar-no-drag text-[13px] font-semibold ${activeProject ? 'text-[#9C86FF]' : 'text-fg-muted'}`}>
         {activeProject?.name || 'No Project'}
       </span>
 
