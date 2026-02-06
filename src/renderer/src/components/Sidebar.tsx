@@ -16,6 +16,7 @@ export default function Sidebar() {
   } = useProjectStore()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const cliWorking = useUIStore((s) => s.cliWorking)
+  const serverRunning = useUIStore((s) => s.serverRunning)
 
   const [settingsProject, setSettingsProject] = useState<Project | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; project: Project } | null>(null)
@@ -257,15 +258,22 @@ export default function Sidebar() {
           )}
         </div>
         {cliWorking[project.id] !== undefined && (
-          <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
+          <span className={`absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
             cliWorking[project.id] ? 'bg-success-fg animate-pulse' : 'bg-danger-fg'
           }`} />
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-medium truncate">{project.name}</div>
-        <div className="text-[11px] text-fg-subtle truncate font-mono">
-          /{project.path.split('/').pop()}
+        <div className="text-[11px] text-fg-subtle truncate font-mono flex items-center gap-1">
+          <span className="truncate">/{project.path.split('/').pop()}</span>
+          {(serverRunning[project.id] ?? 0) > 0 && (
+            <span className="flex items-center gap-0.5 shrink-0">
+              {Array.from({ length: serverRunning[project.id] }, (_, i) => (
+                <span key={i} className="w-1.5 h-1.5 rounded-full bg-success-fg" />
+              ))}
+            </span>
+          )}
         </div>
       </div>
       <div className="flex items-center shrink-0">
@@ -310,7 +318,7 @@ export default function Sidebar() {
             <button
               key={project.id}
               onClick={() => setActiveProject(project.id)}
-              className={`w-full h-11 flex items-center justify-center transition-colors ${
+              className={`relative w-full h-11 flex items-center justify-center transition-colors ${
                 activeProjectId === project.id
                   ? 'text-fg-default'
                   : 'text-fg-subtle hover:bg-bg-subtle/50 hover:text-fg-muted'
@@ -334,11 +342,14 @@ export default function Sidebar() {
                   />
                 )}
                 {cliWorking[project.id] !== undefined && (
-                  <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
+                  <span className={`absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
                     cliWorking[project.id] ? 'bg-success-fg animate-pulse' : 'bg-danger-fg'
                   }`} />
                 )}
               </div>
+              {(serverRunning[project.id] ?? 0) > 0 && (
+                <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-success-fg" />
+              )}
             </button>
           ))}
         </div>

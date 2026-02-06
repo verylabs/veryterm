@@ -24,6 +24,12 @@ const api = {
         callback(sessionId, exitCode)
       ipcRenderer.on('terminal:exit', handler)
       return () => ipcRenderer.removeListener('terminal:exit', handler)
+    },
+    onProcessStatus: (callback: (sessionId: string, running: boolean) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, sessionId: string, running: boolean) =>
+        callback(sessionId, running)
+      ipcRenderer.on('terminal:processStatus', handler)
+      return () => ipcRenderer.removeListener('terminal:processStatus', handler)
     }
   },
 

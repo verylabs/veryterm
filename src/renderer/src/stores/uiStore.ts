@@ -15,7 +15,7 @@ interface UIState {
   sidebarCollapsed: boolean
   focusedPanel: FocusedPanel
   searchFocused: boolean
-  serverRunning: Record<string, boolean> // projectId -> running
+  serverRunning: Record<string, number> // projectId -> running server count
   cliWorking: Record<string, boolean> // projectId -> working (CLI outputting)
   notificationsEnabled: boolean
 
@@ -31,7 +31,7 @@ interface UIState {
   setFocusedPanel: (panel: FocusedPanel) => void
   setSearchFocused: (focused: boolean) => void
   setPanelSizes: (sizes: [number, number, number]) => void
-  setServerRunning: (projectId: string, running: boolean) => void
+  setServerRunning: (projectId: string, count: number) => void
   setCLIWorking: (projectId: string, working: boolean) => void
   toggleNotifications: () => void
   setLayoutMode: (mode: LayoutMode) => void
@@ -74,8 +74,8 @@ export const useUIStore = create<UIState>((set, get) => ({
     set({ panelSizes: sizes })
     saveLayout({ ...get(), panelSizes: sizes })
   },
-  setServerRunning: (projectId, running) =>
-    set((s) => ({ serverRunning: { ...s.serverRunning, [projectId]: running } })),
+  setServerRunning: (projectId, count) =>
+    set((s) => ({ serverRunning: { ...s.serverRunning, [projectId]: count } })),
   setCLIWorking: (projectId, working) =>
     set((s) => ({ cliWorking: { ...s.cliWorking, [projectId]: working } })),
   toggleNotifications: () => {

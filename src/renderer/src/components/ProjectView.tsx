@@ -90,10 +90,30 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         const updated = prev.map((t) =>
           t.sessionId === sid ? { ...t, running: false } : t
         )
-        // Sync sidebar green dot
-        const anyRunning = updated.some((t) => t.running)
-        setServerRunning(project.id, anyRunning)
+        const runCount = updated.filter((t) => t.running).length
+        setServerRunning(project.id, runCount)
         window.api.notify('VeryTerm', `Server stopped (${project.name} - ${prev[idx].name})`)
+        return updated
+      })
+    })
+    return cleanup
+  }, [project.id, project.name, setServerRunning])
+
+  // Process status polling — main process detects child processes via pgrep
+  useEffect(() => {
+    const cleanup = window.api.terminal.onProcessStatus((sid, running) => {
+      setServerTabs((prev) => {
+        const idx = prev.findIndex((t) => t.sessionId === sid)
+        if (idx === -1) return prev
+        if (prev[idx].running === running) return prev
+        const updated = prev.map((t) =>
+          t.sessionId === sid ? { ...t, running } : t
+        )
+        const runCount = updated.filter((t) => t.running).length
+        setServerRunning(project.id, runCount)
+        if (!running) {
+          window.api.notify('VeryTerm', `Server stopped (${project.name} - ${prev[idx].name})`)
+        }
         return updated
       })
     })
@@ -104,12 +124,8 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
   useEffect(() => {
     if (!mainSessionId) return
     const cleanup = window.api.terminal.onData((sid, _data) => {
-      if (sid === mainSessionId) {
+      if (sid === mainSessionId && wasWorkingRef.current) {
         lastDataRef.current = Date.now()
-        if (!wasWorkingRef.current) {
-          wasWorkingRef.current = true
-          useUIStore.getState().setCLIWorking(project.id, true)
-        }
       }
     })
     const interval = setInterval(() => {
@@ -136,6 +152,12 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         const trimmed = inputBufferRef.current.trim()
         if (trimmed.length > 0) addPrompt(project.id, trimmed)
         inputBufferRef.current = ''
+        // Start CLI working detection — only after user actually sends a command
+        if (!wasWorkingRef.current) {
+          wasWorkingRef.current = true
+          lastDataRef.current = Date.now()
+          useUIStore.getState().setCLIWorking(project.id, true)
+        }
         return
       }
       if (data === '\x03' || data === '\x04') { inputBufferRef.current = ''; return }
@@ -159,24 +181,16 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     [project.id, addPrompt]
   )
 
+  // Server input — no manual running tracking; process poller handles it
   const handleServerInput = useCallback(
-    (data: string) => {
-      if (data === '\r' || data === '\n') {
-        const tabId = activeServerTabId
-        if (!tabId) return
-        setServerTabs((prev) =>
-          prev.map((t) => (t.id === tabId ? { ...t, running: true } : t))
-        )
-        setServerRunning(project.id, true)
-      }
-    },
-    [project.id, activeServerTabId, setServerRunning]
+    (_data: string) => {},
+    []
   )
 
-  // Sync serverRunning from tabs
+  // Sync serverRunning count from tabs
   useEffect(() => {
-    const anyRunning = serverTabs.some((t) => t.running)
-    setServerRunning(project.id, anyRunning)
+    const runCount = serverTabs.filter((t) => t.running).length
+    setServerRunning(project.id, runCount)
   }, [serverTabs, project.id, setServerRunning])
 
   // Trigger resize when active tab changes so xterm FitAddon recalculates
@@ -378,10 +392,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
           {activeTab && (
             <>
               <span className="text-fg-subtle">:</span>
-              <span className="normal-case text-[11px] text-fg-default">{activeTab.name}</span>
+              <span className={`normal-case text-[11px] ${activeTabRunning ? 'text-success-fg' : 'text-fg-default'}`}>{activeTab.name}</span>
             </>
           )}
-          {activeTabRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
           {activeTab && (
             <button
               onClick={(e) => {
@@ -430,7 +443,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
               RUN
             </button>
           )}
-          {serverTabs.length > 1 && activeTab && (
+          {serverTabs.length > 1 && activeTab && activeTab.id !== serverTabs[0]?.id && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -469,23 +482,23 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
           if (!tab) return null
           return (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
-              <div className="bg-bg-default border border-border-muted rounded-lg px-5 py-4 shadow-lg flex flex-col items-center gap-3 max-w-[260px]">
-                <p className="text-xs text-fg-default text-center leading-relaxed">
+              <div className="bg-bg-default border border-border-muted rounded-lg px-7 py-6 shadow-lg flex flex-col items-center gap-4 max-w-[320px]">
+                <p className="text-sm text-fg-default text-center leading-relaxed">
                   {tab.running
                     ? <><span className="font-semibold text-danger-fg">{tab.name}</span> is running.<br/>Close anyway?</>
                     : <>Close <span className="font-semibold">{tab.name}</span>?</>
                   }
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     onClick={(e) => { e.stopPropagation(); cancelCloseServerTab() }}
-                    className="px-3 py-1 text-[11px] rounded bg-bg-subtle text-fg-default hover:bg-border-muted transition-colors"
+                    className="px-4 py-1.5 text-xs rounded bg-bg-subtle text-fg-default hover:bg-border-muted transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); confirmCloseServerTab() }}
-                    className="px-3 py-1 text-[11px] rounded bg-danger-fg/90 text-white hover:bg-danger-fg transition-colors font-semibold"
+                    className="px-4 py-1.5 text-xs rounded bg-danger-fg/90 text-white hover:bg-danger-fg transition-colors font-semibold"
                   >
                     Close
                   </button>
@@ -547,7 +560,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       </div>
 
       {/* Tab bar — bottom */}
-      <div className="flex items-center h-7 min-h-[28px] max-h-[28px] border-t border-border-muted bg-[#111114] px-1 gap-0.5 overflow-x-auto">
+      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] border-t border-border-muted bg-[#191D21] px-1.5 gap-0.5 overflow-x-auto">
         {serverTabs.map((tab) => (
           <button
             key={tab.id}
@@ -555,15 +568,12 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
               e.stopPropagation()
               setActiveServerTabId(tab.id)
             }}
-            className={`flex items-center gap-1 px-2 h-5 text-[10px] rounded transition-colors shrink-0 ${
+            className={`flex items-center gap-1 px-2 h-6 text-[12px] rounded transition-colors shrink-0 ${
               tab.id === activeServerTabId
-                ? 'bg-[#9C86FF]/10 text-[#9C86FF] font-semibold'
-                : 'text-fg-subtle hover:bg-bg-subtle'
+                ? `bg-[#9C86FF]/10 font-semibold ${tab.running ? 'text-success-fg' : 'text-[#9C86FF]'}`
+                : `hover:bg-bg-subtle ${tab.running ? 'text-success-fg font-semibold' : 'text-fg-subtle'}`
             }`}
           >
-            {tab.running && (
-              <span className="w-1.5 h-1.5 rounded-full bg-success-fg shrink-0" />
-            )}
             <span>{tab.name}</span>
           </button>
         ))}
@@ -572,7 +582,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
             e.stopPropagation()
             addServerTab()
           }}
-          className="flex items-center justify-center w-5 h-5 text-[11px] text-fg-subtle hover:bg-bg-subtle rounded shrink-0"
+          className="flex items-center justify-center w-6 h-6 text-[12px] text-fg-subtle hover:bg-bg-subtle rounded shrink-0"
           title="Add server tab"
         >
           +

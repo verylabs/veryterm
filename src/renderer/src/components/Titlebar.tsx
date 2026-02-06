@@ -38,7 +38,7 @@ function LayoutIcon({ mode, active }: { mode: LayoutMode; active: boolean }) {
 
 export default function Titlebar() {
   const { projects, activeProjectId } = useProjectStore()
-  const serverRunning = useUIStore((s) => activeProjectId ? s.serverRunning[activeProjectId] : false)
+  const serverRunning = useUIStore((s) => activeProjectId ? s.serverRunning[activeProjectId] ?? 0 : 0)
   const layoutMode = useUIStore((s) => s.layoutMode)
   const setLayoutMode = useUIStore((s) => s.setLayoutMode)
   const notificationsEnabled = useUIStore((s) => s.notificationsEnabled)
@@ -65,10 +65,10 @@ export default function Titlebar() {
       )}
 
       {/* Server status */}
-      {activeProject && serverRunning && (
+      {activeProject && serverRunning > 0 && (
         <span className="titlebar-no-drag flex items-center gap-1.5 ml-3 text-[11px] text-success-fg">
           <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />
-          Server
+          Server ({serverRunning})
         </span>
       )}
 

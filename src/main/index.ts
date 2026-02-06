@@ -3,6 +3,7 @@ import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
+import { execFile } from 'child_process'
 import { v4 as uuidv4 } from 'uuid'
 import fs from 'fs'
 
@@ -79,6 +80,7 @@ ipcMain.handle('terminal:create', (_event, projectId: string, type: 'main' | 'se
       win.webContents.send('terminal:exit', sessionId, exitCode)
     }
     ptySessions.delete(sessionId)
+    processStatusCache.delete(sessionId)
   })
 
   return sessionId
@@ -106,8 +108,56 @@ ipcMain.handle('terminal:kill', (_event, sessionId: string) => {
   if (session) {
     session.process.kill()
     ptySessions.delete(sessionId)
+    processStatusCache.delete(sessionId)
   }
 })
+
+// Terminal: child process polling
+// Tracks whether each server pty has child processes (= server running)
+const processStatusCache = new Map<string, boolean>()
+
+function checkChildProcess(pid: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile('pgrep', ['-P', String(pid)], (error) => {
+      // pgrep exits 0 if match found, 1 if no match
+      resolve(!error)
+    })
+  })
+}
+
+let processPoller: ReturnType<typeof setInterval> | null = null
+
+function startProcessPoller(): void {
+  if (processPoller) return
+  processPoller = setInterval(async () => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (!win) return
+    const entries: [string, PtySession][] = []
+    ptySessions.forEach((session, sessionId) => { entries.push([sessionId, session]) })
+    for (const [sessionId, session] of entries) {
+      if (session.type !== 'server') continue
+      try {
+        const pid = session.process.pid
+        const hasChild = await checkChildProcess(pid)
+        const prev = processStatusCache.get(sessionId) ?? false
+        if (hasChild !== prev) {
+          processStatusCache.set(sessionId, hasChild)
+          win.webContents.send('terminal:processStatus', sessionId, hasChild)
+        }
+      } catch {
+        // session may have been killed during check
+      }
+    }
+  }, 2000)
+}
+
+function stopProcessPoller(): void {
+  if (processPoller) {
+    clearInterval(processPoller)
+    processPoller = null
+  }
+  processStatusCache.clear()
+}
 
 // Dialog: select folder
 ipcMain.handle('dialog:selectFolder', async () => {
@@ -307,6 +357,8 @@ ipcMain.on('update:install', () => {
 app.whenReady().then(() => {
   const win = createWindow()
 
+  startProcessPoller()
+
   // Auto-updater: check for updates in production
   if (app.isPackaged) {
     autoUpdater.autoDownload = true
@@ -331,6 +383,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  stopProcessPoller()
   // Kill all pty sessions
   for (const session of ptySessions.values()) {
     session.process.kill()
