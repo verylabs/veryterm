@@ -4,3 +4,6 @@ dist/
 .DS_Store
 *.log
 *.tsbuildinfo
+일렉트론 자동업데이트 방법.md
+*.cer
+*.certSigningRequest

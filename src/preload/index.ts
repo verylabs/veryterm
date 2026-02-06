@@ -65,6 +65,21 @@ const api = {
   // Shell
   shell: {
     openExternal: (url: string): void => ipcRenderer.send('shell:openExternal', url)
+  },
+
+  // Auto-updater
+  updater: {
+    onUpdateAvailable: (callback: (version: string) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, version: string) => callback(version)
+      ipcRenderer.on('update:available', handler)
+      return () => ipcRenderer.removeListener('update:available', handler)
+    },
+    onUpdateDownloaded: (callback: (version: string) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, version: string) => callback(version)
+      ipcRenderer.on('update:downloaded', handler)
+      return () => ipcRenderer.removeListener('update:downloaded', handler)
+    },
+    install: (): void => ipcRenderer.send('update:install')
   }
 }
 

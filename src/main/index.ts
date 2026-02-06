@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, Notification, shell } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
@@ -298,8 +299,29 @@ ipcMain.on('shell:openExternal', (_event, url: string) => {
 
 // --- App Lifecycle ---
 
+// Auto-updater: install on request from renderer
+ipcMain.on('update:install', () => {
+  autoUpdater.quitAndInstall()
+})
+
 app.whenReady().then(() => {
-  createWindow()
+  const win = createWindow()
+
+  // Auto-updater: check for updates in production
+  if (app.isPackaged) {
+    autoUpdater.autoDownload = true
+    autoUpdater.autoInstallOnAppQuit = true
+
+    autoUpdater.on('update-available', (info) => {
+      win.webContents.send('update:available', info.version)
+    })
+
+    autoUpdater.on('update-downloaded', (info) => {
+      win.webContents.send('update:downloaded', info.version)
+    })
+
+    autoUpdater.checkForUpdatesAndNotify()
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

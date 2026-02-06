@@ -8,12 +8,16 @@ files:
   - '!electron.vite.config.*'
   - '!{.eslintignore,.eslintrc.*,.prettierrc.*,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+afterSign: scripts/notarize.js
 mac:
   target:
     - pkg
     - dmg
   artifactName: ${name}-${version}-${arch}.${ext}
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  hardenedRuntime: true
+  gatekeeperAssess: false
 pkg:
   installLocation: /Applications
   allowCurrentUserHome: false
@@ -23,3 +27,7 @@ pkg:
   artifactName: ${name}-${version}.${ext}
 dmg:
   artifactName: ${name}-${version}.${ext}
+publish:
+  provider: github
+  owner: OWNER
+  repo: veryterm
