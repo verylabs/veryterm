@@ -16,6 +16,18 @@ npm run typecheck    # 타입 체크 (main + renderer)
 npm run lint         # ESLint 실행
 ```
 
+## 빌드 & 릴리즈
+
+```bash
+# DMG 빌드
+npm run build && npx electron-builder --mac dmg
+
+# GitHub Release 생성 (태그 + DMG 첨부)
+gh release create v1.0.0 dist/veryterm-1.0.0.dmg --title "VeryTerm v1.0.0" --notes "Release notes here"
+```
+
+버전 변경 시 `package.json`의 `version` 필드를 먼저 수정한 뒤 빌드한다.
+
 ## 기술 스택
 
 - **Electron 34** + **React 19** + **TypeScript 5**

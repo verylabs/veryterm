@@ -29,5 +29,5 @@ dmg:
   artifactName: ${name}-${version}.${ext}
 publish:
   provider: github
-  owner: OWNER
+  owner: verylabs
   repo: veryterm
