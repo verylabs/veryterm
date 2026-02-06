@@ -1,4 +1,4 @@
-# VTerm - PRD (Product Requirements Document)
+# VeryTerm - PRD (Product Requirements Document)
 
 ## 개요
 

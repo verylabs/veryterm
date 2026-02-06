@@ -1,5 +1,5 @@
 {
-  "name": "vterm",
+  "name": "veryterm",
   "version": "0.1.0",
   "description": "Multi-project terminal manager for vibe coding with Claude CLI",
   "main": "./out/main/index.js",

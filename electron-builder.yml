@@ -1,5 +1,5 @@
-appId: com.vterm.app
-productName: VTerm
+appId: com.veryterm.app
+productName: VeryTerm
 directories:
   buildResources: build
 files:

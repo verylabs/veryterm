@@ -9,8 +9,6 @@ interface ShortcutActions {
   onTogglePanelFocus: () => void
 }
 
-const PANEL_MAP = ['main', 'server', 'prompts'] as const
-
 export function useKeyboardShortcuts(actions: ShortcutActions) {
   const { projects, categories, setActiveProject } = useProjectStore()
 
@@ -23,22 +21,12 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
     const visualOrder = [...uncategorized, ...categorized]
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Option+1/2/3: Switch panel
-      if (e.altKey && !e.metaKey && !e.ctrlKey) {
-        if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3') {
-          e.preventDefault()
-          const idx = parseInt(e.code.replace('Digit', '')) - 1
-          useUIStore.getState().setFocusedPanel(PANEL_MAP[idx])
-          return
-        }
-      }
+      if (!e.altKey || e.metaKey || e.ctrlKey) return
 
-      const isMeta = e.metaKey || e.ctrlKey
-      if (!isMeta) return
-
-      // Cmd+1~9: Switch project by visual order
-      if (e.key >= '1' && e.key <= '9') {
-        const index = parseInt(e.key) - 1
+      // ⌥1~9,0: Switch project by visual order (0 = 10th)
+      if (/^Digit[0-9]$/.test(e.code)) {
+        const digit = parseInt(e.code.replace('Digit', ''))
+        const index = digit === 0 ? 9 : digit - 1
         if (index < visualOrder.length) {
           e.preventDefault()
           setActiveProject(visualOrder[index].id)
@@ -46,27 +34,27 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
         return
       }
 
-      switch (e.key) {
-        // Cmd+N: Add project
-        case 'n':
+      switch (e.code) {
+        // ⌥N: Add project
+        case 'KeyN':
           e.preventDefault()
           actions.onAddProject()
           break
 
-        // Cmd+B: Toggle sidebar
-        case 'b':
+        // ⌥B: Toggle sidebar
+        case 'KeyB':
           e.preventDefault()
           actions.onToggleSidebar()
           break
 
-        // Cmd+F: Focus prompt search
-        case 'f':
+        // ⌥F: Focus prompt search
+        case 'KeyF':
           e.preventDefault()
           actions.onFocusSearch()
           break
 
-        // Cmd+`: Toggle panel focus
-        case '`':
+        // ⌥`: Toggle panel focus (CLI ↔ Server)
+        case 'Backquote':
           e.preventDefault()
           actions.onTogglePanelFocus()
           break

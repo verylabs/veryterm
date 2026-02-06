@@ -31,21 +31,21 @@ export default function MainArea() {
     return (
       <div className="flex-1 flex items-center justify-center bg-bg-canvas">
         <div className="text-center">
-          <div className="text-[22px] font-bold text-fg-subtle mb-2">VTerm</div>
+          <div className="text-[22px] font-bold text-fg-subtle mb-2">VeryTerm</div>
           <div className="text-[13px] text-fg-subtle mb-6">
             Select or add a project from the sidebar
           </div>
           <div className="text-[12px] text-fg-subtle space-y-1.5 font-mono">
             <div className="flex items-center justify-center gap-3">
-              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘N</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌥N</kbd>
               <span>Add Project</span>
             </div>
             <div className="flex items-center justify-center gap-3">
-              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘1-9</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌥1-9</kbd>
               <span>Switch Project</span>
             </div>
             <div className="flex items-center justify-center gap-3">
-              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘`</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌥`</kbd>
               <span>Switch Panel</span>
             </div>
           </div>

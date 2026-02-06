@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-VTerm - 바이브 코딩 워크플로우를 위한 멀티 프로젝트 터미널 매니저 데스크탑 앱. 여러 프로젝트에서 Claude CLI 실행, 개발 서버 관리, 프롬프트 히스토리 기록을 한 곳에서 처리한다.
+VeryTerm - 바이브 코딩 워크플로우를 위한 멀티 프로젝트 터미널 매니저 데스크탑 앱. 여러 프로젝트에서 Claude CLI 실행, 개발 서버 관리, 프롬프트 히스토리 기록을 한 곳에서 처리한다.
 
 ## 명령어
 

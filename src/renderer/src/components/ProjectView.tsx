@@ -64,7 +64,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     const cleanup = window.api.terminal.onExit((sid, _code) => {
       if (sid === serverSessionId) {
         setServerRunning(project.id, false)
-        window.api.notify('VTerm', `Server stopped (${project.name})`)
+        window.api.notify('VeryTerm', `Server stopped (${project.name})`)
       }
     })
     return cleanup
@@ -89,7 +89,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         wasWorkingRef.current = false
         useUIStore.getState().setCLIWorking(project.id, false)
         if (useUIStore.getState().notificationsEnabled) {
-          window.api.notify('VTerm', `CLI finished (${project.name})`)
+          window.api.notify('VeryTerm', `CLI finished (${project.name})`)
           window.api.dock.bounce()
         }
       }
@@ -210,6 +210,9 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     [setSecondarySplit]
   )
 
+  const handleTabFromCLI = useCallback(() => setFocusedPanel('server'), [setFocusedPanel])
+  const handleTabFromServer = useCallback(() => setFocusedPanel('main'), [setFocusedPanel])
+
   const panelHeaderStyle = { height: 32, minHeight: 32, maxHeight: 32 } as const
   const panelHeaderClass = 'px-3 text-xs leading-none font-medium text-fg-subtle uppercase tracking-wider border-b border-border-muted bg-bg-default flex items-center justify-between'
   const focusRing = 'ring-1 ring-inset ring-accent-fg/25'
@@ -224,6 +227,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       <div className={panelHeaderClass} style={panelHeaderStyle}>
         <div className="flex items-center gap-2">
           <span>CLI</span>
+          <span className="text-fg-subtle font-mono normal-case flex items-center"><span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">`</span></span>
           {cliWorking && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
         </div>
         <div className="flex items-center gap-1.5">
@@ -243,7 +247,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         </div>
       </div>
       <div className="flex-1 min-h-0">
-        <Terminal sessionId={mainSessionId} onInput={handleMainInput} />
+        <Terminal sessionId={mainSessionId} onInput={handleMainInput} onTab={handleTabFromCLI} focused={active && focusedPanel === 'main'} />
       </div>
     </div>
   )
@@ -257,6 +261,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       <div className={panelHeaderClass} style={panelHeaderStyle}>
         <div className="flex items-center gap-2">
           <span>Server</span>
+          <span className="text-fg-subtle font-mono normal-case flex items-center"><span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">`</span></span>
           {serverRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
         </div>
         <div className="flex items-center gap-1.5">
@@ -293,7 +298,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
         </div>
       </div>
       <div className="flex-1 min-h-0">
-        <Terminal sessionId={serverSessionId} onInput={handleServerInput} />
+        <Terminal sessionId={serverSessionId} onInput={handleServerInput} onTab={handleTabFromServer} focused={active && focusedPanel === 'server'} />
       </div>
     </div>
   )

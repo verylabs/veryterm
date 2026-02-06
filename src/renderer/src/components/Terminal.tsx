@@ -7,9 +7,11 @@ import '@xterm/xterm/css/xterm.css'
 interface TerminalProps {
   sessionId: string | null
   onInput?: (data: string) => void
+  onTab?: () => void
+  focused?: boolean
 }
 
-export default function Terminal({ sessionId, onInput }: TerminalProps) {
+export default function Terminal({ sessionId, onInput, onTab, focused }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -17,23 +19,33 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
   // Use refs to avoid stale closures in xterm callbacks
   const sessionIdRef = useRef(sessionId)
   const onInputRef = useRef(onInput)
+  const onTabRef = useRef(onTab)
 
   // Keep refs in sync with props
   sessionIdRef.current = sessionId
   onInputRef.current = onInput
+  onTabRef.current = onTab
 
   const handleResize = useCallback(() => {
     if (fitAddonRef.current && xtermRef.current) {
       try {
-        // Preserve scroll position across fit()
         const viewport = containerRef.current?.querySelector('.xterm-viewport') as HTMLElement | null
+        // Detect if user is following output (scrolled to bottom) vs reading history (scrolled up)
+        const isAtBottom = !viewport ||
+          (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 5)
         const scrollTop = viewport?.scrollTop ?? 0
         fitAddonRef.current.fit()
         if (viewport) {
-          viewport.scrollTop = scrollTop
-          requestAnimationFrame(() => {
+          if (isAtBottom) {
+            // Was at bottom → stay at bottom (follow output)
+            viewport.scrollTop = viewport.scrollHeight
+          } else {
+            // Was scrolled up → preserve reading position
             viewport.scrollTop = scrollTop
-          })
+            requestAnimationFrame(() => {
+              viewport.scrollTop = scrollTop
+            })
+          }
         }
         if (sessionIdRef.current) {
           window.api.terminal.resize(
@@ -84,7 +96,7 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
         fontSize: 13,
         lineHeight: 1.4,
         fontWeight: '400',
-        letterSpacing: -1,
+        letterSpacing: 0,
         fontFamily: "'NanumGothicCoding', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
         cursorBlink: true,
         allowProposedApi: true
@@ -101,6 +113,25 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
       const bgStyle = document.createElement('style')
       bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #1f2529 !important; }`
       container.appendChild(bgStyle)
+
+      // Let ⌥ shortcuts pass through to window listener instead of pty
+      term.attachCustomKeyEventHandler((e) => {
+        if (e.type !== 'keydown') return true
+        if (e.altKey && !e.metaKey && !e.ctrlKey) {
+          // ⌥` : toggle CLI ↔ Server
+          if (e.code === 'Backquote') {
+            e.preventDefault()
+            e.stopPropagation()
+            onTabRef.current?.()
+            return false
+          }
+          // ⌥0~9, ⌥N, ⌥B, ⌥F : let bubble to useKeyboardShortcuts
+          if (/^(Digit[0-9]|Key[NBF])$/.test(e.code)) {
+            return false
+          }
+        }
+        return true
+      })
 
       xtermRef.current = term
       fitAddonRef.current = fitAddon
@@ -129,6 +160,13 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     initTerminal()
 
+    // After font loads, re-fit to recalculate with correct font metrics
+    document.fonts.ready.then(() => {
+      if (fitAddonRef.current && container.isConnected) {
+        fitAddonRef.current.fit()
+      }
+    })
+
     return () => {
       cleanupRef.current()
     }
@@ -148,6 +186,13 @@ export default function Terminal({ sessionId, onInput }: TerminalProps) {
 
     return cleanup
   }, [sessionId, handleResize])
+
+  // Focus terminal when focused prop becomes true
+  useEffect(() => {
+    if (focused && xtermRef.current) {
+      xtermRef.current.focus()
+    }
+  }, [focused])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
