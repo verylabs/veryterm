@@ -157,11 +157,18 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
 
     initTerminal()
 
-    // After font loads, re-fit to recalculate with correct font metrics
-    document.fonts.ready.then(() => {
-      if (fitAddonRef.current && container.isConnected) {
-        fitAddonRef.current.fit()
-      }
+    // After NanumGothicCoding loads, force xterm to remeasure character metrics.
+    // Just calling fit() is not enough — xterm's CharSizeService caches measurements
+    // from the fallback font. Toggling fontSize forces a full remeasurement.
+    document.fonts.load('13px NanumGothicCoding').then(() => {
+      const term = xtermRef.current
+      const fit = fitAddonRef.current
+      if (!term || !fit || !container.isConnected) return
+      term.options.fontSize = 14
+      term.options.fontSize = 13
+      fit.fit()
+    }).catch(() => {
+      fitAddonRef.current?.fit()
     })
 
     return () => {
