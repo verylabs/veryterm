@@ -241,7 +241,7 @@ export default function Sidebar() {
       <div className="flex items-center shrink-0">
         {idx < 9 && (
           <span className="flex items-center text-fg-subtle font-mono">
-            <span className="text-[16px] leading-none">⌘</span><span className="text-[12px] leading-none">{idx + 1}</span>
+            <span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">{idx + 1}</span>
           </span>
         )}
         <button
@@ -359,7 +359,7 @@ export default function Sidebar() {
         <div className="flex-1 overflow-y-auto py-1">
           {projects.length === 0 && categories.length === 0 && (
             <div className="px-4 py-10 text-center text-fg-subtle text-[12px] leading-relaxed">
-              Add a project or<br />drag a folder here
+              Drop folder here<br />to add project
             </div>
           )}
 
@@ -510,13 +510,20 @@ export default function Sidebar() {
             <span className="text-sm">+</span>
             <span>Add Category</span>
           </button>
+
+          {/* Drop hint in empty space */}
+          {projects.length > 0 && (
+            <div className="flex-1 min-h-[60px] flex items-end justify-center pb-3">
+              <span className="text-[11px] text-fg-subtle">Drop folder here to add project</span>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="h-8 border-t border-border-muted px-3 flex items-center shrink-0">
-          <div className="flex items-center justify-between w-full text-xs text-fg-muted">
-            <span>{projects.length} projects</span>
-            <span className="font-mono">⌘B</span>
+          <div className="flex items-center justify-between w-full text-fg-subtle font-mono">
+            <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">1-9</span></span>
+            <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">B</span></span>
           </div>
         </div>
       </div>
