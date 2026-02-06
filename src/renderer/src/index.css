@@ -9,14 +9,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'NanumGothicCoding';
-  src: url('./assets/fonts/NanumGothicCoding-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 @theme {
   /* Dark palette — terminal #24292E, chrome #1D2125 */
   --color-bg-canvas: #1d2125;

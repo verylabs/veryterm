@@ -15,7 +15,6 @@ interface UIState {
   sidebarCollapsed: boolean
   focusedPanel: FocusedPanel
   searchFocused: boolean
-  settingsOpen: boolean
   serverRunning: Record<string, boolean> // projectId -> running
   cliWorking: Record<string, boolean> // projectId -> working (CLI outputting)
   notificationsEnabled: boolean
@@ -30,12 +29,9 @@ interface UIState {
 
   toggleSidebar: () => void
   setFocusedPanel: (panel: FocusedPanel) => void
-  cycleFocusedPanel: () => void
   setSearchFocused: (focused: boolean) => void
-  setSettingsOpen: (open: boolean) => void
   setPanelSizes: (sizes: [number, number, number]) => void
   setServerRunning: (projectId: string, running: boolean) => void
-  clearServerRunning: (projectId: string) => void
   setCLIWorking: (projectId: string, working: boolean) => void
   toggleNotifications: () => void
   setLayoutMode: (mode: LayoutMode) => void
@@ -44,7 +40,6 @@ interface UIState {
   loadLayout: () => Promise<void>
 }
 
-const PANEL_ORDER: FocusedPanel[] = ['main', 'server', 'prompts']
 const LAYOUT_FILE = 'layout.json'
 
 function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number; notificationsEnabled: boolean }): void {
@@ -62,7 +57,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   sidebarCollapsed: false,
   focusedPanel: 'main',
   searchFocused: false,
-  settingsOpen: false,
   serverRunning: {},
   cliWorking: {},
   notificationsEnabled: true,
@@ -75,26 +69,13 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setFocusedPanel: (panel) => set({ focusedPanel: panel }),
 
-  cycleFocusedPanel: () => {
-    const { focusedPanel } = get()
-    const idx = PANEL_ORDER.indexOf(focusedPanel)
-    const next = PANEL_ORDER[(idx + 1) % PANEL_ORDER.length]
-    set({ focusedPanel: next })
-  },
-
   setSearchFocused: (focused) => set({ searchFocused: focused }),
-  setSettingsOpen: (open) => set({ settingsOpen: open }),
   setPanelSizes: (sizes) => {
     set({ panelSizes: sizes })
     saveLayout({ ...get(), panelSizes: sizes })
   },
   setServerRunning: (projectId, running) =>
     set((s) => ({ serverRunning: { ...s.serverRunning, [projectId]: running } })),
-  clearServerRunning: (projectId) =>
-    set((s) => {
-      const { [projectId]: _, ...rest } = s.serverRunning
-      return { serverRunning: rest }
-    }),
   setCLIWorking: (projectId, working) =>
     set((s) => ({ cliWorking: { ...s.cliWorking, [projectId]: working } })),
   toggleNotifications: () => {

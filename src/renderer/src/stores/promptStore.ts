@@ -13,7 +13,6 @@ interface PromptState {
   clearPrompts: (projectId: string) => void
   removeProjectPrompts: (projectId: string) => void
   togglePin: (id: string) => void
-  getProjectPrompts: (projectId: string) => PromptHistory[]
 }
 
 export const usePromptStore = create<PromptState>((set, get) => ({
@@ -79,9 +78,5 @@ export const usePromptStore = create<PromptState>((set, get) => ({
       )
     }))
     get().savePrompts()
-  },
-
-  getProjectPrompts: (projectId: string) => {
-    return get().prompts.filter((p) => p.projectId === projectId)
   }
 }))

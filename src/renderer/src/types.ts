@@ -24,7 +24,6 @@ export interface PromptHistory {
   id: string
   projectId: string
   prompt: string
-  response?: string
   timestamp: string
   pinned: boolean
 }

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
-export type TerminalType = 'main' | 'server'
+type TerminalType = 'main' | 'server'
 
 const api = {
   // Terminal

@@ -1,12 +1,11 @@
-import { app, BrowserWindow, ipcMain, dialog, Notification } from 'electron'
-import electron from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Notification, shell } from 'electron'
 import path from 'path'
 import os from 'os'
 import * as pty from 'node-pty'
 import { v4 as uuidv4 } from 'uuid'
 import fs from 'fs'
 
-const shell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/zsh'
+const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/zsh'
 
 interface PtySession {
   id: string
@@ -49,7 +48,7 @@ ipcMain.handle('terminal:create', (_event, projectId: string, type: 'main' | 'se
   const cols = 80
   const rows = 24
 
-  const ptyProcess = pty.spawn(shell, ['--login'], {
+  const ptyProcess = pty.spawn(defaultShell, ['--login'], {
     name: 'xterm-256color',
     cols,
     rows,
@@ -257,7 +256,8 @@ ipcMain.handle('project:hasCLAUDEmd', (_event, projectPath: string) => {
 // Data: load from file
 ipcMain.handle('data:load', (_event, filename: string) => {
   try {
-    const dataPath = path.join(app.getPath('userData'), filename)
+    const safeName = path.basename(filename)
+    const dataPath = path.join(app.getPath('userData'), safeName)
     if (!fs.existsSync(dataPath)) return null
     return JSON.parse(fs.readFileSync(dataPath, 'utf-8'))
   } catch {
@@ -268,7 +268,8 @@ ipcMain.handle('data:load', (_event, filename: string) => {
 // Data: save to file
 ipcMain.handle('data:save', (_event, filename: string, data: unknown) => {
   try {
-    const dataPath = path.join(app.getPath('userData'), filename)
+    const safeName = path.basename(filename)
+    const dataPath = path.join(app.getPath('userData'), safeName)
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2))
     return true
   } catch {
@@ -292,7 +293,7 @@ ipcMain.on('dock:bounce', () => {
 })
 
 ipcMain.on('shell:openExternal', (_event, url: string) => {
-  electron.shell.openExternal(url)
+  shell.openExternal(url)
 })
 
 // --- App Lifecycle ---
