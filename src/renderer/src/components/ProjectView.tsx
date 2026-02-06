@@ -227,7 +227,6 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       <div className={panelHeaderClass} style={panelHeaderStyle}>
         <div className="flex items-center gap-2">
           <span>CLI</span>
-          <span className="text-fg-subtle font-mono normal-case flex items-center"><span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">`</span></span>
           {cliWorking && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
         </div>
         <div className="flex items-center gap-1.5">
@@ -261,7 +260,6 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       <div className={panelHeaderClass} style={panelHeaderStyle}>
         <div className="flex items-center gap-2">
           <span>Server</span>
-          <span className="text-fg-subtle font-mono normal-case flex items-center"><span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">`</span></span>
           {serverRunning && <span className="w-1.5 h-1.5 rounded-full bg-success-fg animate-pulse" />}
         </div>
         <div className="flex items-center gap-1.5">

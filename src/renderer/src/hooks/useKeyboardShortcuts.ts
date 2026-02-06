@@ -1,12 +1,10 @@
 import { useEffect } from 'react'
 import { useProjectStore } from '../stores/projectStore'
-import { useUIStore } from '../stores/uiStore'
 
 interface ShortcutActions {
   onAddProject: () => void
   onToggleSidebar: () => void
   onFocusSearch: () => void
-  onTogglePanelFocus: () => void
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -21,12 +19,12 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
     const visualOrder = [...uncategorized, ...categorized]
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!e.altKey || e.metaKey || e.ctrlKey) return
+      const isMeta = e.metaKey || e.ctrlKey
+      if (!isMeta) return
 
-      // ⌥1~9,0: Switch project by visual order (0 = 10th)
-      if (/^Digit[0-9]$/.test(e.code)) {
-        const digit = parseInt(e.code.replace('Digit', ''))
-        const index = digit === 0 ? 9 : digit - 1
+      // ⌘1~9: Switch project by visual order
+      if (e.key >= '1' && e.key <= '9') {
+        const index = parseInt(e.key) - 1
         if (index < visualOrder.length) {
           e.preventDefault()
           setActiveProject(visualOrder[index].id)
@@ -34,29 +32,23 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
         return
       }
 
-      switch (e.code) {
-        // ⌥N: Add project
-        case 'KeyN':
+      switch (e.key) {
+        // ⌘N: Add project
+        case 'n':
           e.preventDefault()
           actions.onAddProject()
           break
 
-        // ⌥B: Toggle sidebar
-        case 'KeyB':
+        // ⌘B: Toggle sidebar
+        case 'b':
           e.preventDefault()
           actions.onToggleSidebar()
           break
 
-        // ⌥F: Focus prompt search
-        case 'KeyF':
+        // ⌘F: Focus prompt search
+        case 'f':
           e.preventDefault()
           actions.onFocusSearch()
-          break
-
-        // ⌥`: Toggle panel focus (CLI ↔ Server)
-        case 'Backquote':
-          e.preventDefault()
-          actions.onTogglePanelFocus()
           break
       }
     }

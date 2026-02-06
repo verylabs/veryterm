@@ -96,7 +96,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
         fontSize: 13,
         lineHeight: 1.4,
         fontWeight: '400',
-        letterSpacing: 0,
+        letterSpacing: 1,
         fontFamily: "'NanumGothicCoding', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
         cursorBlink: true,
         allowProposedApi: true
@@ -114,21 +114,18 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #1f2529 !important; }`
       container.appendChild(bgStyle)
 
-      // Let ⌥ shortcuts pass through to window listener instead of pty
+      // Intercept Tab to toggle CLI ↔ Server, let ⌘ shortcuts bubble
       term.attachCustomKeyEventHandler((e) => {
         if (e.type !== 'keydown') return true
-        if (e.altKey && !e.metaKey && !e.ctrlKey) {
-          // ⌥` : toggle CLI ↔ Server
-          if (e.code === 'Backquote') {
-            e.preventDefault()
-            e.stopPropagation()
-            onTabRef.current?.()
-            return false
-          }
-          // ⌥0~9, ⌥N, ⌥B, ⌥F : let bubble to useKeyboardShortcuts
-          if (/^(Digit[0-9]|Key[NBF])$/.test(e.code)) {
-            return false
-          }
+        // Tab: toggle CLI ↔ Server
+        if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault()
+          onTabRef.current?.()
+          return false
+        }
+        // ⌘1~9, ⌘N, ⌘B, ⌘F : let bubble to useKeyboardShortcuts
+        if (e.metaKey && /^(Digit[1-9]|Key[NBF])$/.test(e.code)) {
+          return false
         }
         return true
       })

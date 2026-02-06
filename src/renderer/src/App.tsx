@@ -10,7 +10,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 export default function App() {
   const { loadProjects, loaded: projectsLoaded, addProject } = useProjectStore()
   const { loadPrompts, loaded: promptsLoaded } = usePromptStore()
-  const { toggleSidebar, setSearchFocused, cycleFocusedPanel, loadLayout } = useUIStore()
+  const { toggleSidebar, setSearchFocused, loadLayout } = useUIStore()
 
   useEffect(() => {
     loadProjects()
@@ -42,15 +42,10 @@ export default function App() {
     setSearchFocused(true)
   }, [setSearchFocused])
 
-  const handleTogglePanelFocus = useCallback(() => {
-    cycleFocusedPanel()
-  }, [cycleFocusedPanel])
-
   useKeyboardShortcuts({
     onAddProject: handleAddProject,
     onToggleSidebar: toggleSidebar,
-    onFocusSearch: handleFocusSearch,
-    onTogglePanelFocus: handleTogglePanelFocus
+    onFocusSearch: handleFocusSearch
   })
 
   if (!projectsLoaded || !promptsLoaded) {

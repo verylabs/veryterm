@@ -37,15 +37,15 @@ export default function MainArea() {
           </div>
           <div className="text-[12px] text-fg-subtle space-y-1.5 font-mono">
             <div className="flex items-center justify-center gap-3">
-              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌥N</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘N</kbd>
               <span>Add Project</span>
             </div>
             <div className="flex items-center justify-center gap-3">
-              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌥1-9</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌘1-9</kbd>
               <span>Switch Project</span>
             </div>
             <div className="flex items-center justify-center gap-3">
-              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">⌥`</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-muted text-[11px]">Tab</kbd>
               <span>Switch Panel</span>
             </div>
           </div>

@@ -271,7 +271,7 @@ export default function Sidebar() {
       <div className="flex items-center shrink-0">
         {idx < 9 && (
           <span className="flex items-center text-fg-subtle font-mono">
-            <span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">{idx + 1}</span>
+            <span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">{idx + 1}</span>
           </span>
         )}
         <button
@@ -300,7 +300,7 @@ export default function Sidebar() {
           <button
             onClick={toggleSidebar}
             className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-bg-subtle text-fg-subtle hover:text-fg-muted transition-colors text-xs"
-            title="Expand sidebar (⌥B)"
+            title="Expand sidebar (⌘B)"
           >
             ▶
           </button>
@@ -315,7 +315,7 @@ export default function Sidebar() {
                   ? 'bg-bg-subtle text-fg-default'
                   : 'text-fg-subtle hover:bg-bg-subtle/50 hover:text-fg-muted'
               }`}
-              title={`${project.name} (⌥${idx + 1})`}
+              title={`${project.name} (⌘${idx + 1})`}
             >
               <div className="relative">
                 {project.icon?.startsWith('data:') ? (
@@ -365,7 +365,7 @@ export default function Sidebar() {
             <button
               onClick={handleAddProject}
               className="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-subtle text-fg-subtle hover:text-fg-default transition-colors text-sm"
-              title="Add project (⌥N)"
+              title="Add project (⌘N)"
             >
               +
             </button>
@@ -373,7 +373,7 @@ export default function Sidebar() {
           <button
             onClick={toggleSidebar}
             className="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-subtle text-fg-subtle hover:text-fg-muted transition-colors text-[10px]"
-            title="Collapse sidebar (⌥B)"
+            title="Collapse sidebar (⌘B)"
           >
             ◀
           </button>
@@ -561,8 +561,8 @@ export default function Sidebar() {
               Powered by VeryLabs
             </a>
             <div className="flex items-center gap-2 font-mono">
-              <span className="flex items-center"><span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">1-9</span></span>
-              <span className="flex items-center"><span className="text-[15px] leading-none">⌥</span><span className="text-[11px] leading-none">B</span></span>
+              <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">1-9</span></span>
+              <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">B</span></span>
             </div>
           </div>
         </div>

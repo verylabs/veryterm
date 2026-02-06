@@ -158,7 +158,7 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
               searchRef.current?.blur()
             }
           }}
-          placeholder="⌥F Search..."
+          placeholder="⌘F Search..."
           className="w-32 px-2 py-1 text-[11px] bg-bg-inset border border-border-default rounded-md text-fg-default placeholder-fg-subtle focus:outline-none focus:border-accent-fg/50"
         />
       </div>
