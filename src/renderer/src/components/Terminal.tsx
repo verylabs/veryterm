@@ -192,7 +192,16 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       }
     })
 
+    // Resize PTY to match actual xterm dimensions, then Ctrl+L to clear
+    // screen and redraw prompt. Fixes blank line caused by zsh PROMPT_EOL_MARK
+    // padding (80-col spaces) wrapping when actual terminal width differs
+    // from the hardcoded 80-col PTY default.
     setTimeout(() => handleResize(), 100)
+    setTimeout(() => {
+      if (sessionIdRef.current) {
+        window.api.terminal.write(sessionIdRef.current, '\x0c')
+      }
+    }, 200)
 
     return cleanup
   }, [sessionId, handleResize])
