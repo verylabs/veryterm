@@ -392,6 +392,8 @@ ipcMain.on('theme:setFrameBg', (_event, color: string) => {
 
 // --- App Lifecycle ---
 
+let isQuitting = false
+
 // Auto-updater: install on request from renderer
 ipcMain.on('update:install', () => {
   autoUpdater.quitAndInstall()
@@ -399,6 +401,16 @@ ipcMain.on('update:install', () => {
 
 app.whenReady().then(() => {
   const win = createWindow()
+
+  // macOS: X 버튼 클릭 시 창만 숨기고 pty 세션 유지
+  if (process.platform === 'darwin') {
+    win.on('close', (e) => {
+      if (!isQuitting) {
+        e.preventDefault()
+        win.hide()
+      }
+    })
+  }
 
   startProcessPoller()
 
@@ -418,11 +430,20 @@ app.whenReady().then(() => {
     autoUpdater.checkForUpdatesAndNotify()
   }
 
+  // macOS: Dock 아이콘 클릭 시 숨긴 창 다시 표시
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    const existing = BrowserWindow.getAllWindows()[0]
+    if (existing) {
+      existing.show()
+    } else {
       createWindow()
     }
   })
+})
+
+// macOS: ⌘Q 등 진짜 종료 시에만 isQuitting 플래그 설정
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
 app.on('window-all-closed', () => {
