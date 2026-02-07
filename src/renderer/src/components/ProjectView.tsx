@@ -23,12 +23,20 @@ let tabCounter = 0
 
 export default function ProjectView({ project, active }: ProjectViewProps) {
   const { addPrompt } = usePromptStore()
-  const {
-    panelSizes, setPanelSizes,
-    focusedPanel, setFocusedPanel, setServerRunning,
-    layoutMode, splitRatio, setSplitRatio, secondarySplit, setSecondarySplit,
-    secondaryCollapsed, toggleSecondaryCollapsed
-  } = useUIStore()
+
+  // Individual selectors to avoid re-renders from unrelated state changes
+  const panelSizes = useUIStore((s) => s.panelSizes)
+  const setPanelSizes = useUIStore((s) => s.setPanelSizes)
+  const focusedPanel = useUIStore((s) => s.focusedPanel)
+  const setFocusedPanel = useUIStore((s) => s.setFocusedPanel)
+  const setServerRunning = useUIStore((s) => s.setServerRunning)
+  const layoutMode = useUIStore((s) => s.layoutMode)
+  const splitRatio = useUIStore((s) => s.splitRatio)
+  const setSplitRatio = useUIStore((s) => s.setSplitRatio)
+  const secondarySplit = useUIStore((s) => s.secondarySplit)
+  const setSecondarySplit = useUIStore((s) => s.setSecondarySplit)
+  const secondaryCollapsed = useUIStore((s) => s.secondaryCollapsed)
+  const toggleSecondaryCollapsed = useUIStore((s) => s.toggleSecondaryCollapsed)
   const narrowCollapsed = secondaryCollapsed && layoutMode === 'right-split'
   const serverRunning = useUIStore((s) => s.serverRunning[project.id])
   const cliWorking = useUIStore((s) => s.cliWorking[project.id])

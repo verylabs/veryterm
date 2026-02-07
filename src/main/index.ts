@@ -132,11 +132,14 @@ function startProcessPoller(): void {
   processPoller = setInterval(async () => {
     const win = BrowserWindow.getAllWindows()[0]
     if (!win) return
-    const entries: [string, PtySession][] = []
-    ptySessions.forEach((session, sessionId) => { entries.push([sessionId, session]) })
-    for (const [sessionId, session] of entries) {
-      if (session.type !== 'server') continue
-      try {
+    const serverEntries: [string, PtySession][] = []
+    ptySessions.forEach((session, sessionId) => {
+      if (session.type === 'server') serverEntries.push([sessionId, session])
+    })
+    if (serverEntries.length === 0) return
+    // Check all server sessions in parallel (bounded by actual count)
+    await Promise.allSettled(
+      serverEntries.map(async ([sessionId, session]) => {
         const pid = session.process.pid
         const hasChild = await checkChildProcess(pid)
         const prev = processStatusCache.get(sessionId) ?? false
@@ -144,11 +147,9 @@ function startProcessPoller(): void {
           processStatusCache.set(sessionId, hasChild)
           win.webContents.send('terminal:processStatus', sessionId, hasChild)
         }
-      } catch {
-        // session may have been killed during check
-      }
-    }
-  }, 2000)
+      })
+    )
+  }, 3000)
 }
 
 function stopProcessPoller(): void {

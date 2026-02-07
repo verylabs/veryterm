@@ -152,18 +152,23 @@ interface UIState {
 
 const LAYOUT_FILE = 'layout.json'
 
+let saveLayoutTimer: ReturnType<typeof setTimeout> | null = null
+
 function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number; secondaryCollapsed: boolean; savedSplitRatio: number; notificationsEnabled: boolean; theme: ThemeId }): void {
-  const data: LayoutData = {
-    layoutMode: state.layoutMode,
-    panelSizes: state.panelSizes,
-    splitRatio: state.splitRatio,
-    secondarySplit: state.secondarySplit,
-    secondaryCollapsed: state.secondaryCollapsed,
-    savedSplitRatio: state.savedSplitRatio,
-    notificationsEnabled: state.notificationsEnabled,
-    theme: state.theme
-  }
-  window.api.data.save(LAYOUT_FILE, data)
+  if (saveLayoutTimer) clearTimeout(saveLayoutTimer)
+  saveLayoutTimer = setTimeout(() => {
+    const data: LayoutData = {
+      layoutMode: state.layoutMode,
+      panelSizes: state.panelSizes,
+      splitRatio: state.splitRatio,
+      secondarySplit: state.secondarySplit,
+      secondaryCollapsed: state.secondaryCollapsed,
+      savedSplitRatio: state.savedSplitRatio,
+      notificationsEnabled: state.notificationsEnabled,
+      theme: state.theme
+    }
+    window.api.data.save(LAYOUT_FILE, data)
+  }, 500)
 }
 
 export const useUIStore = create<UIState>((set, get) => ({

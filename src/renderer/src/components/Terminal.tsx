@@ -17,6 +17,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   const xtermRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const lastSizeRef = useRef({ width: 0, height: 0 })
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Use refs to avoid stale closures in xterm callbacks
   const sessionIdRef = useRef(sessionId)
@@ -32,24 +33,19 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     if (fitAddonRef.current && xtermRef.current) {
       try {
         const viewport = containerRef.current?.querySelector('.xterm-viewport') as HTMLElement | null
-        // Detect if user is following output (scrolled to bottom) vs reading history (scrolled up)
         const isAtBottom = !viewport ||
           (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 5)
         const scrollTop = viewport?.scrollTop ?? 0
         fitAddonRef.current.fit()
-        // Restore scroll after fit() — must retry because xterm's internal
-        // resize handler can reset scrollTop after our restore
+        // Restore scroll after fit() — rAF ensures xterm's internal resize handler runs first
         if (viewport) {
-          const restore = () => {
+          requestAnimationFrame(() => {
             if (isAtBottom) {
               viewport.scrollTop = viewport.scrollHeight
             } else {
               viewport.scrollTop = scrollTop
             }
-          }
-          restore()
-          requestAnimationFrame(restore)
-          setTimeout(restore, 50)
+          })
         }
         if (sessionIdRef.current) {
           window.api.terminal.resize(
@@ -64,7 +60,13 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     }
   }, [])
 
-  // Initialize xterm once (after font is loaded)
+  // Debounced resize — batches rapid resize events into single fit() call
+  const debouncedResize = useCallback(() => {
+    if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current)
+    resizeTimerRef.current = setTimeout(handleResize, 50)
+  }, [handleResize])
+
+  // Initialize xterm once
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -140,8 +142,6 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       xtermRef.current = term
       fitAddonRef.current = fitAddon
 
-      setTimeout(() => fitAddon.fit(), 50)
-
       // Use refs so callbacks always see latest values
       const inputDisposable = term.onData((data) => {
         if (sessionIdRef.current) {
@@ -154,16 +154,19 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
         const entry = entries[0]
         if (!entry) return
         const { width, height } = entry.contentRect
-        // Skip if size hasn't actually changed (e.g. hidden→visible with same dimensions)
+        // Skip zero-size (hidden) containers
+        if (width === 0 || height === 0) return
+        // Skip if size hasn't actually changed
         const last = lastSizeRef.current
         if (Math.abs(width - last.width) < 1 && Math.abs(height - last.height) < 1) return
         last.width = width
         last.height = height
-        handleResize()
+        debouncedResize()
       })
       observer.observe(container)
 
       cleanupRef.current = () => {
+        if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current)
         inputDisposable.dispose()
         observer.disconnect()
         term.dispose()
@@ -175,8 +178,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     initTerminal()
 
     // After NanumGothicCoding loads, force xterm to remeasure character metrics.
-    // Just calling fit() is not enough — xterm's CharSizeService caches measurements
-    // from the fallback font. Toggling fontSize forces a full remeasurement.
+    // Toggling fontSize forces CharSizeService cache invalidation.
     document.fonts.load('13px NanumGothicCoding').then(() => {
       const term = xtermRef.current
       const fit = fitAddonRef.current
@@ -185,13 +187,14 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       term.options.fontSize = 13
       fit.fit()
     }).catch(() => {
+      // Font not available — fit with fallback font
       fitAddonRef.current?.fit()
     })
 
     return () => {
       cleanupRef.current()
     }
-  }, [handleResize])
+  }, [handleResize, debouncedResize])
 
   // Handle pty output → xterm
   useEffect(() => {
