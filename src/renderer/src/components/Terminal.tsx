@@ -16,6 +16,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   const containerRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
+  const lastSizeRef = useRef({ width: 0, height: 0 })
 
   // Use refs to avoid stale closures in xterm callbacks
   const sessionIdRef = useRef(sessionId)
@@ -149,7 +150,17 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
         onInputRef.current?.(data)
       })
 
-      const observer = new ResizeObserver(() => handleResize())
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0]
+        if (!entry) return
+        const { width, height } = entry.contentRect
+        // Skip if size hasn't actually changed (e.g. hidden→visible with same dimensions)
+        const last = lastSizeRef.current
+        if (Math.abs(width - last.width) < 1 && Math.abs(height - last.height) < 1) return
+        last.width = width
+        last.height = height
+        handleResize()
+      })
       observer.observe(container)
 
       cleanupRef.current = () => {
@@ -207,9 +218,12 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   }, [sessionId, handleResize])
 
   // Focus terminal when focused prop becomes true
+  // Use requestAnimationFrame to ensure DOM is fully visible after project switch
   useEffect(() => {
     if (focused && xtermRef.current) {
-      xtermRef.current.focus()
+      requestAnimationFrame(() => {
+        xtermRef.current?.focus()
+      })
     }
   }, [focused])
 
