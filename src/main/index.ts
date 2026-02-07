@@ -403,7 +403,7 @@ let isQuitting = false
 // Auto-updater: install on request from renderer
 ipcMain.on('update:install', () => {
   isQuitting = true
-  autoUpdater.quitAndInstall()
+  autoUpdater.quitAndInstall(false, true)
 })
 
 app.whenReady().then(() => {
