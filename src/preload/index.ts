@@ -44,7 +44,9 @@ const api = {
     detectType: (path: string): Promise<{ type: string | null; serverCommand: string | null }> =>
       ipcRenderer.invoke('project:detectType', path),
     hasCLAUDEmd: (path: string): Promise<boolean> =>
-      ipcRenderer.invoke('project:hasCLAUDEmd', path)
+      ipcRenderer.invoke('project:hasCLAUDEmd', path),
+    detectFavicon: (path: string): Promise<string | null> =>
+      ipcRenderer.invoke('project:detectFavicon', path)
   },
 
   // Data persistence

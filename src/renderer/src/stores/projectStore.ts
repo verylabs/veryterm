@@ -36,22 +36,31 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       activeProjectId: string | null
     } | null
     if (data) {
-      // Re-detect project types for projects missing type info
+      // Re-detect project types and favicons for projects missing info
       const projects = await Promise.all(
         data.projects.map(async (p) => {
+          let updated = { ...p }
+          let changed = false
           if (!p.projectType) {
             try {
               const detected = await window.api.project.detectType(p.path)
               if (detected.type) {
-                return {
-                  ...p,
-                  projectType: detected.type,
-                  serverCommand: p.serverCommand || detected.serverCommand || undefined
-                }
+                updated.projectType = detected.type
+                updated.serverCommand = p.serverCommand || detected.serverCommand || undefined
+                changed = true
               }
             } catch { /* ignore detection failures */ }
           }
-          return p
+          if (!p.icon) {
+            try {
+              const favicon = await window.api.project.detectFavicon(p.path)
+              if (favicon) {
+                updated.icon = favicon
+                changed = true
+              }
+            } catch { /* ignore detection failures */ }
+          }
+          return changed ? updated : p
         })
       )
       set({
@@ -60,9 +69,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         activeProjectId: data.activeProjectId,
         loaded: true
       })
-      // Save updated types
+      // Save if anything was updated
       const state = get()
-      if (projects.some((p, i) => p.projectType !== data.projects[i]?.projectType)) {
+      if (projects.some((p, i) => p !== data.projects[i])) {
         state.saveProjects()
       }
     } else {
@@ -79,11 +88,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const name = projectPath.split('/').pop() || 'Untitled'
     const detected = await window.api.project.detectType(projectPath)
     const hasCLAUDEmd = await window.api.project.hasCLAUDEmd(projectPath)
+    const favicon = await window.api.project.detectFavicon(projectPath)
 
     const project: Project = {
       id: uuidv4(),
       name,
       path: projectPath,
+      icon: favicon || undefined,
       serverCommand: detected.serverCommand || undefined,
       projectType: detected.type || undefined,
       hasCLAUDEmd,

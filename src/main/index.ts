@@ -299,6 +299,41 @@ ipcMain.handle('project:detectType', (_event, projectPath: string) => {
   }
 })
 
+// Project: detect favicon from project directory
+ipcMain.handle('project:detectFavicon', (_event, projectPath: string) => {
+  const candidates = [
+    'public/favicon.ico',
+    'public/favicon.png',
+    'public/favicon.svg',
+    'static/favicon.ico',
+    'static/favicon.png',
+    'app/favicon.ico',
+    'public/logo.png',
+    'public/logo.svg'
+  ]
+
+  const mimeTypes: Record<string, string> = {
+    '.ico': 'image/x-icon',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml'
+  }
+
+  try {
+    for (const candidate of candidates) {
+      const fullPath = path.join(projectPath, candidate)
+      if (fs.existsSync(fullPath)) {
+        const ext = path.extname(candidate).toLowerCase()
+        const mime = mimeTypes[ext] || 'image/png'
+        const data = fs.readFileSync(fullPath)
+        return `data:${mime};base64,${data.toString('base64')}`
+      }
+    }
+  } catch {
+    // ignore read errors
+  }
+  return null
+})
+
 // Project: check if CLAUDE.md exists
 ipcMain.handle('project:hasCLAUDEmd', (_event, projectPath: string) => {
   return fs.existsSync(path.join(projectPath, 'CLAUDE.md'))

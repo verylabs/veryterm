@@ -7,6 +7,14 @@ import type { Project, Category } from '../types'
 
 const DRAG_TYPE_PROJECT = 'application/x-veryterm-project'
 
+function getAbbreviation(name: string): string {
+  const parts = name.split(/[-_\s.]+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
+
 export default function Sidebar() {
   const {
     projects, categories, activeProjectId,
@@ -251,10 +259,9 @@ export default function Sidebar() {
           ) : project.icon ? (
             project.icon
           ) : (
-            <div
-              className={`w-2 h-2 rounded-full ${getStatusClass(project)}`}
-              style={getStatusStyle(project)}
-            />
+            <span className="text-[11px] font-bold text-fg-muted">
+              {getAbbreviation(project.name)}
+            </span>
           )}
         </div>
         {cliWorking[project.id] !== undefined && (
@@ -341,9 +348,13 @@ export default function Sidebar() {
                       </div>
                     ) : (
                       <div
-                        className={`w-2.5 h-2.5 rounded-full ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF] ring-offset-2 ring-offset-bg-default' : ''} ${getStatusClass(project)}`}
-                        style={getStatusStyle(project)}
-                      />
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`}
+                        style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
+                      >
+                        <span className="text-[11px] font-bold text-fg-muted">
+                          {getAbbreviation(project.name)}
+                        </span>
+                      </div>
                     )}
                     {cliWorking[project.id] !== undefined && (
                       <span className={`absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
