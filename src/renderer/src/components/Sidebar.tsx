@@ -604,10 +604,7 @@ export default function Sidebar() {
             >
               VeryTerm {appVersion && `v${appVersion}`}
             </a>
-            <div className="flex items-center gap-2 font-mono">
-              <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">1-9</span></span>
-              <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">B</span></span>
-            </div>
+            <span className="flex items-center font-mono"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">B</span></span>
           </div>
         </div>
       </div>
