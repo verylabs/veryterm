@@ -433,6 +433,11 @@ app.whenReady().then(() => {
     })
 
     autoUpdater.checkForUpdatesAndNotify()
+
+    // Re-check every hour
+    setInterval(() => {
+      autoUpdater.checkForUpdatesAndNotify()
+    }, 60 * 60 * 1000)
   }
 
   // macOS: Dock 아이콘 클릭 시 숨긴 창 다시 표시
