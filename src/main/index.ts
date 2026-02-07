@@ -363,6 +363,11 @@ ipcMain.handle('data:save', (_event, filename: string, data: unknown) => {
   }
 })
 
+// App version
+ipcMain.handle('app:getVersion', () => {
+  return app.getVersion()
+})
+
 // Notification
 ipcMain.on('notify', (_event, title: string, body: string) => {
   new Notification({ title, body }).show()

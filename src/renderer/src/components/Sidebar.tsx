@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useProjectStore } from '../stores/projectStore'
 import { usePromptStore } from '../stores/promptStore'
 import { useUIStore } from '../stores/uiStore'
@@ -36,9 +36,14 @@ export default function Sidebar() {
   const [editingName, setEditingName] = useState('')
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [appVersion, setAppVersion] = useState('')
   const sidebarRef = useRef<HTMLDivElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
   const newCategoryInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    window.api.getVersion().then(setAppVersion)
+  }, [])
 
   const uncategorizedProjects = projects.filter((p) => !p.category)
   const getProjectsInCategory = (catId: string) => projects.filter((p) => p.category === catId)
@@ -597,7 +602,7 @@ export default function Sidebar() {
               onClick={(e) => { e.preventDefault(); window.api.shell.openExternal('https://www.verylabs.io') }}
               className="text-[10px] text-fg-subtle hover:text-fg-muted transition-colors cursor-pointer"
             >
-              Powered by VeryLabs
+              VeryTerm {appVersion && `v${appVersion}`}
             </a>
             <div className="flex items-center gap-2 font-mono">
               <span className="flex items-center"><span className="text-[15px] leading-none">⌘</span><span className="text-[11px] leading-none">1-9</span></span>

@@ -57,6 +57,10 @@ const api = {
       ipcRenderer.invoke('data:save', filename, data)
   },
 
+  // App info
+  getVersion: (): Promise<string> =>
+    ipcRenderer.invoke('app:getVersion'),
+
   // File utils
   getPathForFile: (file: File): string =>
     webUtils.getPathForFile(file),
