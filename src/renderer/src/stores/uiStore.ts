@@ -106,6 +106,8 @@ interface LayoutData {
   panelSizes: [number, number, number]
   splitRatio: number
   secondarySplit: number
+  secondaryCollapsed?: boolean
+  savedSplitRatio?: number
   notificationsEnabled?: boolean
   theme?: ThemeId
 }
@@ -126,6 +128,10 @@ interface UIState {
   splitRatio: number // primary split ratio (%), default 50
   secondarySplit: number // secondary area split ratio (%), default 50
 
+  // Secondary panel collapsed (CLI widened)
+  secondaryCollapsed: boolean
+  savedSplitRatio: number // splitRatio before collapse
+
   // Theme
   theme: ThemeId
 
@@ -139,18 +145,21 @@ interface UIState {
   setLayoutMode: (mode: LayoutMode) => void
   setSplitRatio: (ratio: number) => void
   setSecondarySplit: (ratio: number) => void
+  toggleSecondaryCollapsed: () => void
   setTheme: (id: ThemeId) => void
   loadLayout: () => Promise<void>
 }
 
 const LAYOUT_FILE = 'layout.json'
 
-function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number; notificationsEnabled: boolean; theme: ThemeId }): void {
+function saveLayout(state: { layoutMode: LayoutMode; panelSizes: [number, number, number]; splitRatio: number; secondarySplit: number; secondaryCollapsed: boolean; savedSplitRatio: number; notificationsEnabled: boolean; theme: ThemeId }): void {
   const data: LayoutData = {
     layoutMode: state.layoutMode,
     panelSizes: state.panelSizes,
     splitRatio: state.splitRatio,
     secondarySplit: state.secondarySplit,
+    secondaryCollapsed: state.secondaryCollapsed,
+    savedSplitRatio: state.savedSplitRatio,
     notificationsEnabled: state.notificationsEnabled,
     theme: state.theme
   }
@@ -168,6 +177,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   layoutMode: 'right-split',
   splitRatio: 50,
   secondarySplit: 50,
+  secondaryCollapsed: false,
+  savedSplitRatio: 50,
   theme: 'gray' as ThemeId,
 
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -193,7 +204,8 @@ export const useUIStore = create<UIState>((set, get) => ({
     saveLayout({ ...get(), layoutMode: mode })
   },
   setSplitRatio: (ratio) => {
-    const clamped = Math.max(20, Math.min(80, ratio))
+    const max = get().secondaryCollapsed ? 97 : 80
+    const clamped = Math.max(20, Math.min(max, ratio))
     set({ splitRatio: clamped })
     saveLayout({ ...get(), splitRatio: clamped })
   },
@@ -201,6 +213,18 @@ export const useUIStore = create<UIState>((set, get) => ({
     const clamped = Math.max(20, Math.min(80, ratio))
     set({ secondarySplit: clamped })
     saveLayout({ ...get(), secondarySplit: clamped })
+  },
+  toggleSecondaryCollapsed: () => {
+    const { secondaryCollapsed, splitRatio, savedSplitRatio } = get()
+    if (secondaryCollapsed) {
+      // Restore
+      set({ secondaryCollapsed: false, splitRatio: savedSplitRatio })
+      saveLayout({ ...get(), secondaryCollapsed: false, splitRatio: savedSplitRatio })
+    } else {
+      // Collapse: save current ratio, widen CLI to 97%
+      set({ secondaryCollapsed: true, savedSplitRatio: splitRatio, splitRatio: 97 })
+      saveLayout({ ...get(), secondaryCollapsed: true, savedSplitRatio: splitRatio, splitRatio: 97 })
+    }
   },
 
   setTheme: (id) => {
@@ -220,10 +244,17 @@ export const useUIStore = create<UIState>((set, get) => ({
       updates.panelSizes = data.panelSizes
     }
     if (typeof data.splitRatio === 'number') {
-      updates.splitRatio = Math.max(20, Math.min(80, data.splitRatio))
+      const max = data.secondaryCollapsed ? 97 : 80
+      updates.splitRatio = Math.max(20, Math.min(max, data.splitRatio))
     }
     if (typeof data.secondarySplit === 'number') {
       updates.secondarySplit = Math.max(20, Math.min(80, data.secondarySplit))
+    }
+    if (typeof data.secondaryCollapsed === 'boolean') {
+      updates.secondaryCollapsed = data.secondaryCollapsed
+    }
+    if (typeof data.savedSplitRatio === 'number') {
+      updates.savedSplitRatio = Math.max(20, Math.min(80, data.savedSplitRatio))
     }
     if (typeof data.notificationsEnabled === 'boolean') {
       updates.notificationsEnabled = data.notificationsEnabled

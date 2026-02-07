@@ -26,8 +26,10 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
   const {
     panelSizes, setPanelSizes,
     focusedPanel, setFocusedPanel, setServerRunning,
-    layoutMode, splitRatio, setSplitRatio, secondarySplit, setSecondarySplit
+    layoutMode, splitRatio, setSplitRatio, secondarySplit, setSecondarySplit,
+    secondaryCollapsed, toggleSecondaryCollapsed
   } = useUIStore()
+  const narrowCollapsed = secondaryCollapsed && layoutMode === 'right-split'
   const serverRunning = useUIStore((s) => s.serverRunning[project.id])
   const cliWorking = useUIStore((s) => s.cliWorking[project.id])
 
@@ -368,6 +370,30 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
           >
             RUN
           </button>
+          {layoutMode === 'right-split' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleSecondaryCollapsed()
+              }}
+              className="w-5 h-5 flex items-center justify-center rounded text-fg-subtle hover:text-fg-default hover:bg-bg-subtle/80 transition-colors text-[11px] leading-none"
+              title={secondaryCollapsed ? 'Expand panels' : 'Collapse panels'}
+            >
+              {secondaryCollapsed ? '◀' : '▶'}
+            </button>
+          )}
+          {(layoutMode === 'bottom-split' || layoutMode === 'rows') && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleSecondaryCollapsed()
+              }}
+              className="w-5 h-5 flex items-center justify-center rounded text-fg-subtle hover:text-fg-default hover:bg-bg-subtle/80 transition-colors text-[11px] leading-none"
+              title={secondaryCollapsed ? 'Expand panels' : 'Collapse panels'}
+            >
+              {secondaryCollapsed ? '▲' : '▼'}
+            </button>
+          )}
         </div>
       </div>
       <div className="flex-1 min-h-0">
@@ -379,9 +405,12 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
   const activeTab = serverTabs.find((t) => t.id === activeServerTabId) ?? null
   const activeTabRunning = activeTab?.running ?? false
 
+  const bottomCollapsed = secondaryCollapsed && layoutMode === 'bottom-split'
+  const rowsCollapsed = secondaryCollapsed && layoutMode === 'rows'
+
   const renderServer = (style?: React.CSSProperties) => (
     <div
-      className={`min-h-0 flex flex-col ${focusedPanel === 'server' ? focusRing : ''}`}
+      className={`min-h-0 flex flex-col ${focusedPanel === 'server' ? focusRing : ''} ${bottomCollapsed ? 'border-r border-border-muted' : ''} ${rowsCollapsed ? 'border-t border-border-muted' : ''}`}
       style={style}
       onClick={() => setFocusedPanel('server')}
     >
@@ -389,13 +418,13 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       <div className={panelHeaderClass} style={panelHeaderStyle}>
         <div className="flex items-center gap-2">
           <span>Server</span>
-          {activeTab && (
+          {!narrowCollapsed && activeTab && (
             <>
               <span className="text-fg-subtle">:</span>
               <span className={`normal-case text-[11px] ${activeTabRunning ? 'text-success-fg' : 'text-fg-default'}`}>{activeTab.name}</span>
             </>
           )}
-          {activeTab && (
+          {!narrowCollapsed && activeTab && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -408,7 +437,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className={`flex items-center gap-1.5 ${narrowCollapsed ? 'hidden' : ''}`}>
           {activeTab?.command && (
             <span className="text-fg-subtle font-mono normal-case text-[10px]">{activeTab.command}</span>
           )}
@@ -461,7 +490,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       </div>
 
       {/* Terminal area — all tabs rendered, inactive ones hidden for state preservation */}
-      <div className="flex-1 min-h-0 relative">
+      <div className={`flex-1 min-h-0 relative ${secondaryCollapsed ? 'hidden' : ''}`}>
         {serverTabs.map((tab) => (
           <div
             key={tab.id}
@@ -560,7 +589,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       </div>
 
       {/* Tab bar — bottom */}
-      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] border-t border-border-muted bg-bg-inset px-1.5 gap-0.5 overflow-x-auto">
+      <div className={`flex items-center h-9 min-h-[36px] max-h-[36px] border-t border-border-muted bg-bg-inset px-1.5 gap-0.5 overflow-x-auto ${secondaryCollapsed ? 'hidden' : ''}`}>
         {serverTabs.map((tab) => (
           <button
             key={tab.id}
@@ -593,21 +622,23 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
 
   const renderPrompts = (style?: React.CSSProperties) => (
     <div
-      className={`min-h-0 ${focusedPanel === 'prompts' ? focusRing : ''}`}
+      className={`min-h-0 ${focusedPanel === 'prompts' ? focusRing : ''} ${rowsCollapsed ? 'border-t border-border-muted' : ''}`}
       style={style}
       onClick={() => setFocusedPanel('prompts')}
     >
-      <PromptPanel projectId={project.id} onSelectPrompt={handleSelectPrompt} />
+      <PromptPanel projectId={project.id} onSelectPrompt={handleSelectPrompt} collapsed={secondaryCollapsed} headerMinimal={narrowCollapsed} />
     </div>
   )
 
+  const collapsedPanelStyle = { height: 32, minHeight: 32, maxHeight: 32 } as const
+
   const renderRows = () => (
     <>
-      {renderCLI({ height: `${panelSizes[0]}%` })}
-      <ResizeHandle onResize={handleResize1} />
-      {renderServer({ height: `${panelSizes[1]}%` })}
-      <ResizeHandle onResize={handleResize2} />
-      {renderPrompts({ height: `${panelSizes[2]}%` })}
+      {renderCLI(secondaryCollapsed ? { flex: 1 } : { height: `${panelSizes[0]}%` })}
+      {!secondaryCollapsed && <ResizeHandle onResize={handleResize1} />}
+      {renderServer(secondaryCollapsed ? collapsedPanelStyle : { height: `${panelSizes[1]}%` })}
+      {!secondaryCollapsed && <ResizeHandle onResize={handleResize2} />}
+      {renderPrompts(secondaryCollapsed ? collapsedPanelStyle : { height: `${panelSizes[2]}%` })}
     </>
   )
 
@@ -615,11 +646,15 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
     <div className="flex-1 flex flex-row min-h-0">
       {/* Left: CLI */}
       {renderCLI({ width: `${splitRatio}%` })}
-      <ResizeHandle direction="horizontal" onResize={handleRightSplitPrimary} />
+      {!secondaryCollapsed && (
+        <ResizeHandle direction="horizontal" onResize={handleRightSplitPrimary} />
+      )}
       {/* Right: Server (top) + Prompts (bottom) */}
-      <div className="flex-1 flex flex-col min-h-0 min-w-0">
+      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${secondaryCollapsed ? 'border-l border-border-muted overflow-hidden' : ''}`}>
         {renderServer({ height: `${secondarySplit}%` })}
-        <ResizeHandle onResize={handleRightSplitSecondary} />
+        {!secondaryCollapsed && (
+          <ResizeHandle onResize={handleRightSplitSecondary} />
+        )}
         {renderPrompts({ flex: 1 })}
       </div>
     </div>
@@ -628,12 +663,19 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
   const renderBottomSplit = () => (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Top: CLI */}
-      {renderCLI({ height: `${splitRatio}%` })}
-      <ResizeHandle onResize={handleBottomSplitPrimary} />
+      {renderCLI(secondaryCollapsed ? { flex: 1 } : { height: `${splitRatio}%` })}
+      {!secondaryCollapsed && (
+        <ResizeHandle onResize={handleBottomSplitPrimary} />
+      )}
       {/* Bottom: Server (left) + Prompts (right) */}
-      <div className="flex-1 flex flex-row min-h-0 min-w-0">
+      <div
+        className={`flex flex-row min-w-0 ${secondaryCollapsed ? 'border-t border-border-muted' : 'flex-1 min-h-0'}`}
+        style={secondaryCollapsed ? { height: 32, minHeight: 32, maxHeight: 32 } : undefined}
+      >
         {renderServer({ width: `${secondarySplit}%` })}
-        <ResizeHandle direction="horizontal" onResize={handleBottomSplitSecondary} />
+        {!secondaryCollapsed && (
+          <ResizeHandle direction="horizontal" onResize={handleBottomSplitSecondary} />
+        )}
         {renderPrompts({ flex: 1 })}
       </div>
     </div>

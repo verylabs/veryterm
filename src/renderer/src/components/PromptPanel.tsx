@@ -6,9 +6,11 @@ import { useUIStore } from '../stores/uiStore'
 interface PromptPanelProps {
   projectId: string
   onSelectPrompt: (prompt: string) => void
+  collapsed?: boolean
+  headerMinimal?: boolean
 }
 
-export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelProps) {
+export default function PromptPanel({ projectId, onSelectPrompt, collapsed, headerMinimal }: PromptPanelProps) {
   const { prompts, togglePin, removePrompt, clearPrompts } = usePromptStore()
   const project = useProjectStore((s) => s.projects.find((p) => p.id === projectId))
   const { searchFocused, setSearchFocused } = useUIStore()
@@ -183,6 +185,7 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
       {/* Header */}
       <div className="flex items-center gap-2 px-3 leading-none border-b border-border-muted bg-bg-default" style={{ height: 32, minHeight: 32, maxHeight: 32 }}>
         <span className="text-xs font-medium text-fg-subtle uppercase tracking-wider">Prompts</span>
+        {(collapsed && headerMinimal) ? null : <>
         <div className="flex-1" />
         <button
           onClick={handleDownload}
@@ -215,10 +218,11 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
           placeholder="⌘F Search..."
           className="w-32 px-2 py-1 text-[11px] bg-bg-inset border border-border-default rounded-md text-fg-default placeholder-fg-subtle focus:outline-none focus:border-accent-fg/50"
         />
+        </>}
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className={`flex-1 overflow-y-auto py-1 ${collapsed ? 'hidden' : ''}`}>
         {projectPrompts.length === 0 && (
           <div className="px-4 py-8 text-center text-fg-subtle text-[12px]">
             {search ? 'No results found' : 'No prompts yet'}
