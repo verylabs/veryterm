@@ -314,44 +314,61 @@ export default function Sidebar() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto py-2 w-full">
-          {projects.map((project, idx) => (
-            <button
-              key={project.id}
-              onClick={() => setActiveProject(project.id)}
-              className={`relative w-full h-11 flex items-center justify-center transition-colors ${
-                activeProjectId === project.id
-                  ? 'text-fg-default'
-                  : 'text-fg-subtle hover:bg-bg-subtle/50 hover:text-fg-muted'
-              }`}
-              title={`${project.name} (⌘${idx + 1})`}
-            >
-              <div className="relative">
-                {project.icon?.startsWith('data:') ? (
-                  <img src={project.icon} alt="" className={`w-7 h-7 rounded-lg object-cover ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`} />
-                ) : project.icon ? (
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`}
-                    style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
-                  >
-                    {project.icon}
+          {(() => {
+            let idx = 0
+            const renderCollapsedItem = (project: Project) => {
+              const i = idx++
+              return (
+                <button
+                  key={project.id}
+                  onClick={() => setActiveProject(project.id)}
+                  className={`relative w-full h-11 flex items-center justify-center transition-colors ${
+                    activeProjectId === project.id
+                      ? 'text-fg-default'
+                      : 'text-fg-subtle hover:bg-bg-subtle/50 hover:text-fg-muted'
+                  }`}
+                  title={`${project.name} (⌘${i + 1})`}
+                >
+                  <div className="relative">
+                    {project.icon?.startsWith('data:') ? (
+                      <img src={project.icon} alt="" className={`w-7 h-7 rounded-lg object-cover ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`} />
+                    ) : project.icon ? (
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF]' : ''}`}
+                        style={project.color ? { backgroundColor: project.color + '22', color: project.color } : undefined}
+                      >
+                        {project.icon}
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF] ring-offset-2 ring-offset-bg-default' : ''} ${getStatusClass(project)}`}
+                        style={getStatusStyle(project)}
+                      />
+                    )}
+                    {cliWorking[project.id] !== undefined && (
+                      <span className={`absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
+                        cliWorking[project.id] ? 'bg-success-fg animate-pulse' : 'bg-danger-fg'
+                      }`} />
+                    )}
                   </div>
-                ) : (
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full ${activeProjectId === project.id ? 'ring-2 ring-[#9C86FF] ring-offset-2 ring-offset-bg-default' : ''} ${getStatusClass(project)}`}
-                    style={getStatusStyle(project)}
-                  />
-                )}
-                {cliWorking[project.id] !== undefined && (
-                  <span className={`absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-default ${
-                    cliWorking[project.id] ? 'bg-success-fg animate-pulse' : 'bg-danger-fg'
-                  }`} />
-                )}
-              </div>
-              {(serverRunning[project.id] ?? 0) > 0 && (
-                <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-success-fg" />
-              )}
-            </button>
-          ))}
+                  {(serverRunning[project.id] ?? 0) > 0 && (
+                    <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-success-fg" />
+                  )}
+                </button>
+              )
+            }
+            const sections: React.ReactNode[] = []
+            if (uncategorizedProjects.length > 0) {
+              sections.push(...uncategorizedProjects.map(renderCollapsedItem))
+            }
+            for (const cat of categories) {
+              const catProjects = getProjectsInCategory(cat.id)
+              if (cat.collapsed || catProjects.length === 0) continue
+              sections.push(<div key={`sep-${cat.id}`} className="mx-3 my-1 border-t border-border-muted" />)
+              sections.push(...catProjects.map(renderCollapsedItem))
+            }
+            return sections
+          })()}
         </div>
       </div>
     )
