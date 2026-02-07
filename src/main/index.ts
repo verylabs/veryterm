@@ -347,6 +347,14 @@ ipcMain.on('shell:openExternal', (_event, url: string) => {
   shell.openExternal(url)
 })
 
+// Theme: set window frame background color
+ipcMain.on('theme:setFrameBg', (_event, color: string) => {
+  const win = BrowserWindow.getAllWindows()[0]
+  if (win) {
+    win.setBackgroundColor(color)
+  }
+})
+
 // --- App Lifecycle ---
 
 // Auto-updater: install on request from renderer

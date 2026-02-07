@@ -1,5 +1,5 @@
 import { useProjectStore } from '../stores/projectStore'
-import { useUIStore, type LayoutMode } from '../stores/uiStore'
+import { useUIStore, THEMES, type LayoutMode, type ThemeId } from '../stores/uiStore'
 
 function LayoutIcon({ mode, active }: { mode: LayoutMode; active: boolean }) {
   const color = active ? 'text-accent-fg' : 'text-fg-subtle'
@@ -43,8 +43,11 @@ export default function Titlebar() {
   const setLayoutMode = useUIStore((s) => s.setLayoutMode)
   const notificationsEnabled = useUIStore((s) => s.notificationsEnabled)
   const toggleNotifications = useUIStore((s) => s.toggleNotifications)
+  const theme = useUIStore((s) => s.theme)
+  const setTheme = useUIStore((s) => s.setTheme)
   const activeProject = projects.find((p) => p.id === activeProjectId)
 
+  const themeIds: ThemeId[] = ['gray', 'blue', 'green', 'purple']
   const layouts: LayoutMode[] = ['rows', 'right-split', 'bottom-split']
 
   return (
@@ -73,6 +76,22 @@ export default function Titlebar() {
       )}
 
       <div className="flex-1" />
+
+      {/* Theme dots */}
+      <div className="titlebar-no-drag flex items-center gap-2.5 mr-3.5">
+        {themeIds.map((id) => (
+          <button
+            key={id}
+            onClick={() => setTheme(id)}
+            className={`w-3 h-3 rounded-full transition-transform ${theme === id ? 'scale-125 ring-1 ring-white/40' : 'hover:scale-110'}`}
+            style={{ backgroundColor: THEMES[id].dot }}
+            title={THEMES[id].label}
+          />
+        ))}
+      </div>
+
+      {/* Separator */}
+      <div className="w-px h-3.5 bg-border-muted mr-2" />
 
       {/* Notification toggle */}
       <button

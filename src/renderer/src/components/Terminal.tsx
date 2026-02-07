@@ -3,6 +3,7 @@ import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
+import { useUIStore, THEMES } from '../stores/uiStore'
 
 interface TerminalProps {
   sessionId: string | null
@@ -70,9 +71,12 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     const cleanupRef = { current: (): void => {} }
 
     const initTerminal = (): void => {
+      const currentTheme = useUIStore.getState().theme
+      const termBg = THEMES[currentTheme].vars['--color-terminal-bg']
+
       const term = new XTerm({
         theme: {
-          background: '#1f2529', // compensated for brightness(0.8) → appears as #191d21
+          background: termBg,
           foreground: '#ffffff',
           cursor: '#ffffff',
           cursorAccent: '#363a43',
@@ -111,9 +115,9 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       term.loadAddon(webLinksAddon)
       term.open(container)
 
-      // Force all xterm background elements to compensated color via CSS !important
+      // Force all xterm background elements to theme color via CSS !important
       const bgStyle = document.createElement('style')
-      bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: #1f2529 !important; }`
+      bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: var(--color-terminal-bg) !important; }`
       container.appendChild(bgStyle)
 
       // Intercept Tab to toggle CLI ↔ Server, let ⌘ shortcuts bubble
@@ -215,10 +219,27 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     window.api.terminal.write(sessionIdRef.current, paths.join(' '))
   }, [])
 
+  // Subscribe to theme changes and update xterm background
+  useEffect(() => {
+    let prevTheme = useUIStore.getState().theme
+    return useUIStore.subscribe((state) => {
+      if (state.theme !== prevTheme) {
+        prevTheme = state.theme
+        const bg = THEMES[state.theme].vars['--color-terminal-bg']
+        if (xtermRef.current) {
+          xtermRef.current.options.theme = {
+            ...xtermRef.current.options.theme,
+            background: bg
+          }
+        }
+      }
+    })
+  }, [])
+
   return (
     <div
       className="w-full h-full p-2 pr-1"
-      style={{ filter: 'brightness(0.8)', backgroundColor: '#1f2529' }}
+      style={{ filter: 'brightness(0.8)', backgroundColor: 'var(--color-terminal-bg)' }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >

@@ -560,7 +560,7 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       </div>
 
       {/* Tab bar — bottom */}
-      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] border-t border-border-muted bg-[#191D21] px-1.5 gap-0.5 overflow-x-auto">
+      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] border-t border-border-muted bg-bg-inset px-1.5 gap-0.5 overflow-x-auto">
         {serverTabs.map((tab) => (
           <button
             key={tab.id}

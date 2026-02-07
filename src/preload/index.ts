@@ -73,6 +73,11 @@ const api = {
     openExternal: (url: string): void => ipcRenderer.send('shell:openExternal', url)
   },
 
+  // Theme
+  theme: {
+    setFrameBg: (color: string): void => ipcRenderer.send('theme:setFrameBg', color)
+  },
+
   // Auto-updater
   updater: {
     onUpdateAvailable: (callback: (version: string) => void): (() => void) => {

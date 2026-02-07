@@ -25,6 +25,8 @@
   --color-fg-muted: #959da5;
   --color-fg-subtle: #6a737d;
 
+  --color-terminal-bg: #1f2529;
+
   --color-accent-fg: #79b8ff;
   --color-accent-emphasis: #2188ff;
   --color-success-fg: #85e89d;
@@ -69,5 +71,5 @@ html, body, #root {
 /* xterm background override */
 .xterm,
 .xterm-viewport {
-  background-color: #191d21 !important;
+  background-color: var(--color-terminal-bg) !important;
 }
