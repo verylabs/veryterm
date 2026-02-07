@@ -124,7 +124,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       term.attachCustomKeyEventHandler((e) => {
         if (e.type !== 'keydown') return true
         // Tab: toggle CLI ↔ Server
-        if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault()
           onTabRef.current?.()
           return false
