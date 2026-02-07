@@ -71,35 +71,34 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-bg-canvas">
       <Titlebar />
-      {updateStatus && (
-        <div className="flex items-center justify-between px-4 py-1.5 bg-accent-emphasis/15 border-b border-accent-fg/20 text-[12px] shrink-0">
-          <span className="text-fg-default">
-            {updateStatus.state === 'downloaded'
-              ? `v${updateStatus.version} 업데이트가 준비되었습니다. 앱을 재시작하면 적용됩니다.`
-              : `v${updateStatus.version} 업데이트를 다운로드 중입니다...`}
-          </span>
-          <div className="flex items-center gap-2">
-            {updateStatus.state === 'downloaded' && (
-              <button
-                onClick={() => window.api.updater.install()}
-                className="px-3 py-0.5 rounded bg-accent-emphasis text-white hover:bg-accent-fg transition-colors text-[11px] font-medium"
-              >
-                지금 재시작
-              </button>
-            )}
-            <button
-              onClick={() => setUpdateStatus(null)}
-              className="text-fg-subtle hover:text-fg-default transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
       <div className="flex-1 flex min-h-0">
         <Sidebar />
         <MainArea />
       </div>
+      {/* Update toast — top center */}
+      {updateStatus && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-bg-default border border-border-muted rounded-full shadow-lg px-5 py-2 flex items-center gap-3">
+          <span className="text-[12px] text-fg-default whitespace-nowrap">
+            {updateStatus.state === 'downloaded'
+              ? `v${updateStatus.version} 업데이트 준비 완료`
+              : `v${updateStatus.version} 다운로드 중...`}
+          </span>
+          {updateStatus.state === 'downloaded' && (
+            <button
+              onClick={() => window.api.updater.install()}
+              className="px-3 py-0.5 rounded-full bg-accent-emphasis text-white hover:bg-accent-fg transition-colors text-[11px] font-medium whitespace-nowrap"
+            >
+              재시작
+            </button>
+          )}
+          <button
+            onClick={() => setUpdateStatus(null)}
+            className="text-fg-subtle hover:text-fg-default transition-colors text-[11px] shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }
