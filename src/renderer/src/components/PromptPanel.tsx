@@ -1,5 +1,6 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+import { useMemo, useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
 import { usePromptStore } from '../stores/promptStore'
+import { useProjectStore } from '../stores/projectStore'
 import { useUIStore } from '../stores/uiStore'
 
 interface PromptPanelProps {
@@ -9,6 +10,7 @@ interface PromptPanelProps {
 
 export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelProps) {
   const { prompts, togglePin, removePrompt, clearPrompts } = usePromptStore()
+  const project = useProjectStore((s) => s.projects.find((p) => p.id === projectId))
   const { searchFocused, setSearchFocused } = useUIStore()
   const [search, setSearch] = useState('')
   const [pinnedSortNewest, setPinnedSortNewest] = useState(true)
@@ -71,6 +73,50 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
       return next
     })
   }, [])
+
+  const handleDownload = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      if (projectPrompts.length === 0 || !project) return
+
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+      const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+
+      const fmtTs = (ts: string) => {
+        const d = new Date(ts)
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+      }
+
+      const renderItems = (items: typeof projectPrompts) =>
+        items.map((p) => `_${fmtTs(p.timestamp)}_\n${p.prompt}`).join('\n\n')
+
+      let md = `# ${project.name} — Prompt History\n\n`
+      md += `- **Project**: ${project.name}\n`
+      md += `- **Path**: ${project.path}\n`
+      if (project.projectType) md += `- **Type**: ${project.projectType}\n`
+      md += `- **Exported**: ${dateStr} ${timeStr}\n`
+      md += `- **Total**: ${projectPrompts.length} prompts\n`
+
+      if (pinned.length > 0) {
+        md += `\n## Pinned\n\n${renderItems(pinned)}\n`
+      }
+      if (unpinned.length > 0) {
+        md += `\n## Recent\n\n${renderItems(unpinned)}\n`
+      }
+
+      const safeName = project.name.replace(/[^a-zA-Z0-9가-힣_-]/g, '_')
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${safeName}-prompts-${dateStr}.md`
+      a.click()
+      URL.revokeObjectURL(url)
+    },
+    [projectPrompts, pinned, unpinned, project]
+  )
 
   const PromptItem = ({ prompt }: { prompt: typeof projectPrompts[0] }) => {
     const isExpanded = expandedIds.has(prompt.id)
@@ -138,6 +184,14 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
       <div className="flex items-center gap-2 px-3 leading-none border-b border-border-muted bg-bg-default" style={{ height: 32, minHeight: 32, maxHeight: 32 }}>
         <span className="text-xs font-medium text-fg-subtle uppercase tracking-wider">Prompts</span>
         <div className="flex-1" />
+        <button
+          onClick={handleDownload}
+          disabled={projectPrompts.length === 0}
+          className="text-[10px] px-1.5 py-0.5 rounded bg-bg-subtle border border-border-default text-fg-subtle hover:text-fg-default transition-colors disabled:opacity-30 disabled:cursor-default disabled:hover:text-fg-subtle"
+          title="Download as Markdown"
+        >
+          Download
+        </button>
         <button
           onClick={() => {
             if (unpinned.length > 0) setShowClearConfirm(true)
