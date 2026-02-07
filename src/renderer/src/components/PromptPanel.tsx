@@ -77,7 +77,7 @@ export default function PromptPanel({ projectId, onSelectPrompt }: PromptPanelPr
     return (
     <div className="px-1.5 py-1 mx-1">
       <div
-        className="group relative min-w-0 bg-border-muted/20 border border-border-muted/60 rounded-lg px-3 py-2 cursor-default hover:border-border-default/80 transition-colors"
+        className="group relative min-w-0 bg-bg-default border border-border-muted/60 rounded-lg px-3 py-2 cursor-default hover:border-border-default/80 transition-colors"
       >
         {/* Delete button */}
         <button

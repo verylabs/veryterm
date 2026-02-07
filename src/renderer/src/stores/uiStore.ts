@@ -36,7 +36,7 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
       '--color-bg-canvas': '#17212b',
       '--color-bg-default': '#1e2c3a',
       '--color-bg-subtle': '#253545',
-      '--color-bg-inset': '#0e1621',
+      '--color-bg-inset': '#19222D',
       '--color-bg-overlay': '#253545',
       '--color-border-default': '#344558',
       '--color-border-muted': '#2b3a4a',
@@ -44,7 +44,7 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
       '--color-fg-default': '#e1e4e8',
       '--color-fg-muted': '#8b9bab',
       '--color-fg-subtle': '#5d7189',
-      '--color-terminal-bg': '#121c2a'
+      '--color-terminal-bg': '#19222D'
     }
   },
   green: {
