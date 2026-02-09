@@ -32,26 +32,15 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   const handleResize = useCallback(() => {
     if (fitAddonRef.current && xtermRef.current) {
       try {
-        const viewport = containerRef.current?.querySelector('.xterm-viewport') as HTMLElement | null
-        const isAtBottom = !viewport ||
-          (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 5)
-        const scrollTop = viewport?.scrollTop ?? 0
+        const term = xtermRef.current
         fitAddonRef.current.fit()
-        // Restore scroll after fit() — rAF ensures xterm's internal resize handler runs first
-        if (viewport) {
-          requestAnimationFrame(() => {
-            if (isAtBottom) {
-              viewport.scrollTop = viewport.scrollHeight
-            } else {
-              viewport.scrollTop = scrollTop
-            }
-          })
-        }
+        term.scrollToBottom()
+
         if (sessionIdRef.current) {
           window.api.terminal.resize(
             sessionIdRef.current,
-            xtermRef.current.cols,
-            xtermRef.current.rows
+            term.cols,
+            term.rows
           )
         }
       } catch {
