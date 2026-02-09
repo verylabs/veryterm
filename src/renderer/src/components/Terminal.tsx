@@ -123,8 +123,9 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
           return true
         }
         if (e.type !== 'keydown') return true
-        // Tab: toggle CLI ↔ Server
-        if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // Tab (without Shift): toggle CLI ↔ Server
+        // Shift+Tab passes through to terminal (e.g. Claude CLI mode switch)
+        if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault()
           onTabRef.current?.()
           return false
@@ -207,7 +208,14 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
 
     const cleanup = window.api.terminal.onData((sid, data) => {
       if (sid === sessionId && xtermRef.current) {
-        xtermRef.current.write(data)
+        const term = xtermRef.current
+        const buf = term.buffer.active
+        const wasAtBottom = buf.viewportY >= buf.baseY - 1
+        term.write(data, () => {
+          if (wasAtBottom) {
+            term.scrollToBottom()
+          }
+        })
       }
     })
 
