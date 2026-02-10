@@ -95,7 +95,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
         lineHeight: 1.4,
         fontWeight: '400',
         letterSpacing: 0,
-        fontFamily: "'NanumGothicCoding', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
+        fontFamily: "'NanumGothicCoding', 'Symbols Nerd Font Mono', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
         cursorBlink: true,
         allowProposedApi: true
       })

@@ -9,6 +9,15 @@
   font-display: swap;
 }
 
+/* Symbols Nerd Font Mono — Powerline/Nerd Font glyphs (bundled) */
+@font-face {
+  font-family: 'Symbols Nerd Font Mono';
+  src: url('./assets/fonts/SymbolsNerdFontMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* Dark palette — terminal #24292E, chrome #1D2125 */
   --color-bg-canvas: #1d2125;
