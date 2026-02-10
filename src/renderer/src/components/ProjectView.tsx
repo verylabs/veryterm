@@ -177,7 +177,11 @@ export default function ProjectView({ project, active }: ProjectViewProps) {
       if (data.includes('\x1b')) { escapeRef.current = data === '\x1b'; return }
       if (escapeRef.current) {
         escapeRef.current = false
-        return
+        // Escape sequence continuations are always ASCII (e.g., [A for arrow keys)
+        // Don't skip non-ASCII data (Korean, CJK) — it's real input, not a continuation
+        if (data.charCodeAt(0) < 128) {
+          return
+        }
       }
       // Process each character — handles Korean IME multi-char data (e.g. \x08+composed char)
       for (const ch of data) {
