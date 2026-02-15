@@ -112,17 +112,16 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: var(--color-terminal-bg) !important; }`
       container.appendChild(bgStyle)
 
-      // Track Shift key state for onData-level Shift+Enter detection
-      let shiftHeld = false
+      // Shift+Enter detection: flag set at Enter keydown, consumed in onData
+      let nextEnterIsShifted = false
 
       // Intercept Tab to toggle CLI ↔ Server, let ⌘ shortcuts bubble
       term.attachCustomKeyEventHandler((e) => {
-        // Track Shift state (works regardless of IME composition)
-        if (e.key === 'Shift') {
-          shiftHeld = e.type === 'keydown'
-          return true
-        }
         if (e.type !== 'keydown') return true
+        // Shift+Enter: check e.shiftKey at exact keydown moment (no stale state)
+        if (e.key === 'Enter' && e.shiftKey) {
+          nextEnterIsShifted = true
+        }
         // Tab (without Shift): toggle CLI ↔ Server
         // Shift+Tab passes through to terminal (e.g. Claude CLI mode switch)
         if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -144,12 +143,14 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       // Shift+Enter: intercept \r at onData level, replace with CSI u
       // This avoids all IME composition timing issues
       const inputDisposable = term.onData((data) => {
-        if (data === '\r' && shiftHeld) {
+        if (data === '\r' && nextEnterIsShifted) {
+          nextEnterIsShifted = false
           if (sessionIdRef.current) {
             window.api.terminal.write(sessionIdRef.current, '\x1b[13;2u')
           }
           return
         }
+        nextEnterIsShifted = false
         if (sessionIdRef.current) {
           window.api.terminal.write(sessionIdRef.current, data)
         }
@@ -209,10 +210,11 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     const cleanup = window.api.terminal.onData((sid, data) => {
       if (sid === sessionId && xtermRef.current) {
         const term = xtermRef.current
-        const buf = term.buffer.active
-        const wasAtBottom = buf.viewportY >= buf.baseY - 1
         term.write(data, () => {
-          if (wasAtBottom) {
+          // Check AFTER write: if viewport is near bottom, keep it at bottom
+          // This avoids the race condition where pre-write check sees stale baseY
+          const buf = term.buffer.active
+          if (buf.baseY - buf.viewportY <= term.rows) {
             term.scrollToBottom()
           }
         })
