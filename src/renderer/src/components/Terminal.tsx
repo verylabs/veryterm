@@ -18,6 +18,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   const fitAddonRef = useRef<FitAddon | null>(null)
   const lastSizeRef = useRef({ width: 0, height: 0 })
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const userScrolledUpRef = useRef(false)
 
   // Use refs to avoid stale closures in xterm callbacks
   const sessionIdRef = useRef(sessionId)
@@ -33,8 +34,22 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     if (fitAddonRef.current && xtermRef.current) {
       try {
         const term = xtermRef.current
+        const savedY = term.buffer.active.viewportY
+
         fitAddonRef.current.fit()
-        term.scrollToBottom()
+
+        if (!userScrolledUpRef.current) {
+          term.scrollToBottom()
+        } else {
+          // Restore scroll after xterm's Viewport._sync() completes (1 RAF)
+          // Double-RAF ensures we execute after _sync
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const maxY = term.buffer.active.baseY
+              term.scrollToLine(Math.min(savedY, maxY))
+            })
+          })
+        }
 
         if (sessionIdRef.current) {
           window.api.terminal.resize(
@@ -112,6 +127,25 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: var(--color-terminal-bg) !important; }`
       container.appendChild(bgStyle)
 
+      // Track user scroll intent via wheel events (not position-based)
+      const wheelHandler = (e: WheelEvent): void => {
+        if (e.deltaY < 0) {
+          // Scrolling up → user wants to read history
+          userScrolledUpRef.current = true
+        } else if (e.deltaY > 0) {
+          // Scrolling down → check if reached bottom
+          requestAnimationFrame(() => {
+            if (xtermRef.current) {
+              const buf = xtermRef.current.buffer.active
+              if (buf.viewportY >= buf.baseY) {
+                userScrolledUpRef.current = false
+              }
+            }
+          })
+        }
+      }
+      container.addEventListener('wheel', wheelHandler, { passive: true })
+
       // Shift+Enter detection: flag set at Enter keydown, consumed in onData
       let nextEnterIsShifted = false
 
@@ -145,12 +179,17 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       const inputDisposable = term.onData((data) => {
         if (data === '\r' && nextEnterIsShifted) {
           nextEnterIsShifted = false
+          userScrolledUpRef.current = false
           if (sessionIdRef.current) {
             window.api.terminal.write(sessionIdRef.current, '\x1b[13;2u')
           }
           return
         }
         nextEnterIsShifted = false
+        // Enter/Return → user expects to see output, resume auto-scroll
+        if (data === '\r') {
+          userScrolledUpRef.current = false
+        }
         if (sessionIdRef.current) {
           window.api.terminal.write(sessionIdRef.current, data)
         }
@@ -174,6 +213,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
 
       cleanupRef.current = () => {
         if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current)
+        container.removeEventListener('wheel', wheelHandler)
         inputDisposable.dispose()
         observer.disconnect()
         term.dispose()
@@ -211,10 +251,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       if (sid === sessionId && xtermRef.current) {
         const term = xtermRef.current
         term.write(data, () => {
-          // Check AFTER write: if viewport is near bottom, keep it at bottom
-          // This avoids the race condition where pre-write check sees stale baseY
-          const buf = term.buffer.active
-          if (buf.baseY - buf.viewportY <= term.rows) {
+          if (!userScrolledUpRef.current) {
             term.scrollToBottom()
           }
         })
