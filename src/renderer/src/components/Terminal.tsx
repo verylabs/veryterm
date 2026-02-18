@@ -112,6 +112,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
         letterSpacing: 0,
         fontFamily: "'NanumGothicCoding', 'Symbols Nerd Font Mono', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
         cursorBlink: true,
+        scrollback: 5000,
         allowProposedApi: true
       })
 

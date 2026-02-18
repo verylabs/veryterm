@@ -415,9 +415,13 @@ app.whenReady().then(() => {
       if (!isQuitting) {
         e.preventDefault()
         win.hide()
+        stopProcessPoller()
       }
     })
   }
+
+  // Start/stop process poller based on window visibility
+  win.on('show', () => startProcessPoller())
 
   startProcessPoller()
 

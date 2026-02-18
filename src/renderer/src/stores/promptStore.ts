@@ -15,6 +15,8 @@ interface PromptState {
   togglePin: (id: string) => void
 }
 
+const MAX_PROMPTS_PER_PROJECT = 500
+
 export const usePromptStore = create<PromptState>((set, get) => ({
   prompts: [],
   loaded: false,
@@ -46,7 +48,18 @@ export const usePromptStore = create<PromptState>((set, get) => ({
       timestamp: new Date().toISOString(),
       pinned: false
     }
-    set((state) => ({ prompts: [entry, ...state.prompts] }))
+    set((state) => {
+      const updated = [entry, ...state.prompts]
+      // Cap per-project: keep pinned + newest up to MAX_PROMPTS_PER_PROJECT
+      const projectCount = new Map<string, number>()
+      const capped = updated.filter((p) => {
+        if (p.pinned) return true
+        const count = (projectCount.get(p.projectId) ?? 0) + 1
+        projectCount.set(p.projectId, count)
+        return count <= MAX_PROMPTS_PER_PROJECT
+      })
+      return { prompts: capped }
+    })
     get().savePrompts()
   },
 

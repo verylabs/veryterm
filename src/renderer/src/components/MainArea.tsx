@@ -2,18 +2,22 @@ import { useEffect, useState } from 'react'
 import ProjectView from './ProjectView'
 import { useProjectStore } from '../stores/projectStore'
 
+// Keep at most N recently-visited projects mounted to limit memory usage.
+// Older projects get unmounted → their PTY sessions and xterm instances are freed.
+const MAX_CACHED_PROJECTS = 3
+
 export default function MainArea() {
   const { projects, activeProjectId } = useProjectStore()
-  const [openedIds, setOpenedIds] = useState<Set<string>>(() => {
-    return activeProjectId ? new Set([activeProjectId]) : new Set()
-  })
+  const [recentIds, setRecentIds] = useState<string[]>(() =>
+    activeProjectId ? [activeProjectId] : []
+  )
 
-  // Add newly active project to opened set
+  // Move active project to front, evict oldest if over limit
   useEffect(() => {
     if (activeProjectId) {
-      setOpenedIds((prev) => {
-        if (prev.has(activeProjectId)) return prev
-        return new Set(prev).add(activeProjectId)
+      setRecentIds((prev) => {
+        const filtered = prev.filter((id) => id !== activeProjectId)
+        return [activeProjectId, ...filtered].slice(0, MAX_CACHED_PROJECTS)
       })
     }
   }, [activeProjectId])
@@ -21,9 +25,9 @@ export default function MainArea() {
   // Clean up removed projects
   useEffect(() => {
     const existingIds = new Set(projects.map((p) => p.id))
-    setOpenedIds((prev) => {
-      const filtered = new Set([...prev].filter((id) => existingIds.has(id)))
-      return filtered.size !== prev.size ? filtered : prev
+    setRecentIds((prev) => {
+      const filtered = prev.filter((id) => existingIds.has(id))
+      return filtered.length !== prev.length ? filtered : prev
     })
   }, [projects])
 
@@ -57,7 +61,7 @@ export default function MainArea() {
   return (
     <div className="flex-1 flex flex-col bg-bg-canvas min-w-0">
       {projects
-        .filter((p) => openedIds.has(p.id))
+        .filter((p) => recentIds.includes(p.id))
         .map((project) => (
           <ProjectView
             key={project.id}
