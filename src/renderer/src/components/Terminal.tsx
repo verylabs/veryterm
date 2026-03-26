@@ -12,6 +12,9 @@ interface TerminalProps {
   focused?: boolean
 }
 
+// How many lines from the bottom counts as "near bottom" for snap-back
+const RESUME_FOLLOW_LINES = 2
+
 export default function Terminal({ sessionId, onInput, onTab, focused }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<XTerm | null>(null)
@@ -19,6 +22,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   const lastSizeRef = useRef({ width: 0, height: 0 })
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userScrolledUpRef = useRef(false)
+  const scrollGapRef = useRef(0)
 
   // Use refs to avoid stale closures in xterm callbacks
   const sessionIdRef = useRef(sessionId)
@@ -30,26 +34,37 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
   onInputRef.current = onInput
   onTabRef.current = onTab
 
+  // Compute gap between viewport and bottom; update scrollGapRef and auto-clear flag
+  const syncGap = useCallback((term: XTerm) => {
+    scrollGapRef.current = term.buffer.active.baseY - term.buffer.active.viewportY
+    if (scrollGapRef.current === 0) {
+      userScrolledUpRef.current = false
+    }
+  }, [])
+
   const handleResize = useCallback(() => {
     if (fitAddonRef.current && xtermRef.current) {
       try {
         const term = xtermRef.current
+        const wasScrolledUp = userScrolledUpRef.current
         const savedY = term.buffer.active.viewportY
 
         fitAddonRef.current.fit()
 
-        if (!userScrolledUpRef.current) {
-          term.scrollToBottom()
-        } else {
-          // Restore scroll after xterm's Viewport._sync() completes (1 RAF)
-          // Double-RAF ensures we execute after _sync
+        // After fit(), wait for xterm Viewport._sync() (RAF-based) then restore
+        requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              const maxY = term.buffer.active.baseY
-              term.scrollToLine(Math.min(savedY, maxY))
-            })
+            if (!xtermRef.current) return
+
+            if (!wasScrolledUp || !userScrolledUpRef.current) {
+              term.scrollToBottom()
+            } else {
+              term.scrollToLine(Math.min(savedY, term.buffer.active.baseY))
+            }
+
+            syncGap(term)
           })
-        }
+        })
 
         if (sessionIdRef.current) {
           window.api.terminal.resize(
@@ -62,7 +77,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
         // ignore resize errors during cleanup
       }
     }
-  }, [])
+  }, [syncGap])
 
   // Debounced resize — batches rapid resize events into single fit() call
   const debouncedResize = useCallback(() => {
@@ -128,24 +143,44 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       bgStyle.textContent = `.xterm, .xterm-viewport, .xterm-screen, .xterm-rows { background-color: var(--color-terminal-bg) !important; }`
       container.appendChild(bgStyle)
 
-      // Track user scroll intent via wheel events (not position-based)
+      // Track user scroll intent via actual viewport gap (not raw wheel direction)
       const wheelHandler = (e: WheelEvent): void => {
-        if (e.deltaY < 0) {
-          // Scrolling up → user wants to read history
-          userScrolledUpRef.current = true
-        } else if (e.deltaY > 0) {
-          // Scrolling down → check if reached bottom
-          requestAnimationFrame(() => {
-            if (xtermRef.current) {
-              const buf = xtermRef.current.buffer.active
-              if (buf.viewportY >= buf.baseY) {
-                userScrolledUpRef.current = false
-              }
+        if (e.deltaY === 0) return
+
+        requestAnimationFrame(() => {
+          const t = xtermRef.current
+          if (!t) return
+
+          syncGap(t)
+
+          if (e.deltaY < 0) {
+            // Only mark as scrolled-up if viewport actually left the bottom
+            if (scrollGapRef.current > 0) {
+              userScrolledUpRef.current = true
             }
-          })
-        }
+          } else {
+            // Scrolling down — snap back to follow if near bottom
+            if (scrollGapRef.current <= RESUME_FOLLOW_LINES) {
+              userScrolledUpRef.current = false
+              t.scrollToBottom()
+              syncGap(t)
+            }
+          }
+        })
       }
       container.addEventListener('wheel', wheelHandler, { passive: true })
+
+      // Sync gap on any scroll event (keyboard scroll, programmatic, etc.)
+      const scrollDisposable = term.onScroll(() => {
+        syncGap(term)
+      })
+
+      // Auto-follow on parser batch completion (not per-IPC-chunk)
+      const writeParsedDisposable = term.onWriteParsed(() => {
+        if (!userScrolledUpRef.current) {
+          term.scrollToBottom()
+        }
+      })
 
       // Shift+Enter detection: flag set at Enter keydown, consumed in onData
       let nextEnterIsShifted = false
@@ -215,6 +250,8 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
       cleanupRef.current = () => {
         if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current)
         container.removeEventListener('wheel', wheelHandler)
+        scrollDisposable.dispose()
+        writeParsedDisposable.dispose()
         inputDisposable.dispose()
         observer.disconnect()
         term.dispose()
@@ -229,20 +266,19 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
     // Toggling fontSize forces CharSizeService cache invalidation.
     document.fonts.load('13px NanumGothicCoding').then(() => {
       const term = xtermRef.current
-      const fit = fitAddonRef.current
-      if (!term || !fit || !container.isConnected) return
+      if (!term || !container.isConnected) return
       term.options.fontSize = 14
       term.options.fontSize = 13
-      fit.fit()
+      handleResize()
     }).catch(() => {
       // Font not available — fit with fallback font
-      fitAddonRef.current?.fit()
+      handleResize()
     })
 
     return () => {
       cleanupRef.current()
     }
-  }, [handleResize, debouncedResize])
+  }, [handleResize, debouncedResize, syncGap])
 
   // Handle pty output → xterm
   useEffect(() => {
@@ -250,12 +286,7 @@ export default function Terminal({ sessionId, onInput, onTab, focused }: Termina
 
     const cleanup = window.api.terminal.onData((sid, data) => {
       if (sid === sessionId && xtermRef.current) {
-        const term = xtermRef.current
-        term.write(data, () => {
-          if (!userScrolledUpRef.current) {
-            term.scrollToBottom()
-          }
-        })
+        xtermRef.current.write(data)
       }
     })
 
